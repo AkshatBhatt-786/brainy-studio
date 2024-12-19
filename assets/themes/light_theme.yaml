@@ -1,0 +1,21 @@
+theme:
+  primary: "#E5D3FF"
+  accent: "#FFFFF0"
+  background: "#FFFFFF"
+  border_color: "#9C7FC6"
+  text_primary: "#212121"
+  text_secondary: "#4D3578"
+  headers:
+    background: "#8E44AD"
+  sidebar:
+    background: "#B39DDB"
+    border_color: "#7E57C2"
+  message_box:
+    background: "#FDEDEC"
+    border_color: "#E74C3C"
+    text_primary: "#212121"
+    text_secondary: "#FFFFFF"
+    button:
+      background: "#FDEDEC"
+      border_color: "#FDEDEC"
+      on_hover: "#FDEDEC"

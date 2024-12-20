@@ -91,7 +91,7 @@ class App(ctk.CTk):
         if self._icon_path:
             self.iconbitmap(self._icon_path)
         self.title("Get started with BrainyStudio")
-        self.geometry(center_window(self, 1200, 600, self._get_window_scaling(), (0, 50)))
+        self.geometry(center_window(self, 1400, 600, self._get_window_scaling(), (0, 50)))
         self.running = True
         self.isConnected = self.checkNetwork()
         # sidebar configurations
@@ -105,10 +105,14 @@ class App(ctk.CTk):
         self.width = abs(self.start_pos - self.end_pos)
         self.halfway_pos = ((self.start_pos + self.end_pos) / 2) - 0.06
         self.sidebar_css = themeManager.loadComponentStyle("theme.sidebar")
-        self.bind_all('<Shift-A>', self.show_api_configurations)
-        self.bind_all('<Shift-C>', self.clearFrame)
+        # API Configurations
+        self.bind_all('<Control-i>', self.show_api_configurations)
+        self.bind_all('<Control-j>', self.clearFrame)
         self.dbx_frame = None
         self.btn_frame = None
+        # Create Exam configuration
+        self.questions = {}
+
 
 
     def build(self):
@@ -156,10 +160,8 @@ class App(ctk.CTk):
                     self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
                     hover_color="#A8DADC", corner_radius=18, text="",
                     image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add-document.png")),
-                                       size=(25, 25)), width=20, height=20, command=self.display_content("create-exam"))
+                                       size=(25, 25)), width=20, height=20, command=lambda: self.display_content("create-exam"))
                 self.toggle_btn.grid(row=1, column=0, pady=20, padx=5, sticky="nsew")
-
-
 
     def showMessageBox(self):
         if self.message_box is None:
@@ -203,7 +205,8 @@ class App(ctk.CTk):
 
     def clearFrame(self, event=None):
         for widget in self.frame.winfo_children():
-            widget.destroy()
+            if widget:
+                widget.destroy()
         if self.dbx_frame:
             self.dbx_frame = None
 
@@ -239,15 +242,499 @@ class App(ctk.CTk):
             self.show_create_exam_view()
 
     def show_create_exam_view(self):
-        self.header_frame = ctk.CTkFrame(self.frame, fg_color="#F5F5F5", corner_radius=0)
+        self.header_frame = ctk.CTkFrame(self.frame, fg_color="#F5F5DC", corner_radius=0)
         self.header_frame.pack(padx=25, pady=10, anchor="center", fill="x")
 
-        self.workspace_frame = ctk.CTkScrollableFrame(
-            self.frame, fg_color="#F5F5F5", border_color="#333333", border_width=0,
-            scrollbar_fg_color="#F5F5F5", scrollbar_button_color="#f5F5F5",
-            scrollbar_button_hover_color="#F5F5F5"
+        self.symbols_frame = ctk.CTkScrollableFrame(
+            self.header_frame, fg_color="#C8C8A9", corner_radius=0, width=600,
+            scrollbar_fg_color="#C8C8A9", scrollbar_button_color="#6A5D4D", scrollbar_button_hover_color="#4A232A"
         )
-        self.workspace_frame.pack(padx=25, anchor="center", fill="both", expand=True)
+        self.symbols_frame.pack(side="left")
+
+        self.create_symbols_frame()
+
+        self.marking_frame = ctk.CTkFrame(self.header_frame, fg_color="#D2B48C", corner_radius=0, width=200)
+        self.marking_frame.pack(fill="y", side="left")
+        self.marking_frame.pack_propagate(False)
+
+        self.marking_label = ctk.CTkLabel(
+            self.marking_frame,
+            text="Marking Options",
+            text_color="#4A232A",
+            font=("Arial", 14, "bold")
+        )
+        self.marking_label.pack(padx=10, pady=5, anchor="w")
+
+        self.separator = ctk.CTkFrame(self.marking_frame, fg_color="#CD7F32", height=2)
+        self.separator.pack(fill="x", pady=10)
+
+        self.allow_negative_marking_chb = ctk.CTkCheckBox(
+            self.marking_frame,
+            text="Negative Marking",
+            fg_color="#F5F5DC",
+            border_color="#CD7F32",
+            checkmark_color="#556B2F",
+            text_color="#333333",
+            hover_color="#DAA520"
+        )
+        self.allow_negative_marking_chb.pack(padx=10, pady=5, anchor="w")
+
+        self.enable_time_limit_chb = ctk.CTkCheckBox(
+            self.marking_frame,
+            text="Enable Time Limit",
+            fg_color="#F5F5DC",
+            border_color="#CD7F32",
+            checkmark_color="#556B2F",
+            text_color="#333333",
+            hover_color="#DAA520"
+        )
+        self.enable_time_limit_chb.pack(padx=10, pady=5, anchor="w")
+
+        self.shuffle_questions_chb = ctk.CTkCheckBox(
+            self.marking_frame,
+            text="Shuffle Questions",
+            fg_color="#F5F5DC",
+            border_color="#CD7F32",
+            checkmark_color="#556B2F",
+            text_color="#333333",
+            hover_color="#DAA520"
+        )
+        self.shuffle_questions_chb.pack(padx=10, pady=5, anchor="w")
+
+        self.action_btn_frame = ctk.CTkFrame(self.header_frame, fg_color="#D2B48C", corner_radius=0, width=200)
+        self.action_btn_frame.pack(fill="y", side="left")
+        self.action_btn_frame.pack_propagate(False)
+
+        self.separator = ctk.CTkFrame(self.action_btn_frame, fg_color="#CD7F32", width=2, height=2)
+        self.separator.pack(fill="y", padx=10, side="left")
+
+        self.grading_label = ctk.CTkLabel(
+            self.action_btn_frame,
+            text="Grading System",
+            text_color="#4A232A",
+            font=("Arial", 14, "bold")
+        )
+        self.grading_label.pack(padx=10, pady=5, anchor="w")
+
+        self.separator = ctk.CTkFrame(self.action_btn_frame, fg_color="#CD7F32", height=2)
+        self.separator.pack(fill="x", pady=10)
+
+        #     fg_color="#8B4513",  # SaddleBrown for button background
+        #     hover_color="#6A2E1F",  # Darker color on hover
+        #     text_color="#F5F5DC",
+
+        self.grading_options = ctk.CTkComboBox(
+            self.action_btn_frame,
+            values=["Percentage", "Points-based", "Pass/Fail"],
+            fg_color="#F5DEB3",  # Dropdown background color
+            text_color="#4A232A",  # Text color
+            button_color="#D4A373",  # Hover background for dropdown button
+            button_hover_color="#8B4513",  # Button hover color
+            dropdown_fg_color="#DEB887",  # Dropdown popup background
+            dropdown_text_color="#4A232A",  # Dropdown popup text
+            dropdown_hover_color="#D4A373",  # Dropdown item hover background
+            border_color="#B87333",  # Border color
+            width=200
+        )
+        self.grading_options.set("Percentage")  # Default selection
+        self.grading_options.pack(padx=10, pady=5)
+
+        self.difficulty_label = ctk.CTkLabel(
+            self.action_btn_frame,
+            text="Difficulty Level",
+            text_color="#4A232A",
+            font=("Calibri", 14, "bold")
+        )
+        self.difficulty_label.pack(padx=10, pady=5, anchor="w")
+
+        self.difficulty_level = ctk.CTkComboBox(
+            self.action_btn_frame,
+            values=["Easy", "Medium", "Hard"],
+            fg_color="#F5DEB3",
+            text_color="#4A232A",
+            button_color="#D4A373",
+            button_hover_color="#8B4513",
+            dropdown_fg_color="#DEB887",
+            dropdown_text_color="#4A232A",
+            dropdown_hover_color="#D4A373",
+            border_color="#B87333",
+            width=200
+        )
+        self.difficulty_level.set("Percentage")
+        self.difficulty_level.pack(padx=10, pady=5)
+
+        self.action_btn_frame2 = ctk.CTkFrame(self.header_frame, fg_color="#D2B48C", corner_radius=0, width=200)
+        self.action_btn_frame2.pack(fill="both", side="left", expand=True)
+        self.action_btn_frame2.pack_propagate(False)
+
+        self.separator = ctk.CTkFrame(self.action_btn_frame2, fg_color="#CD7F32", width=2, height=2)
+        self.separator.pack(fill="y", padx=10, side="left")
+
+        self.exam_mode_label = ctk.CTkLabel(
+            self.action_btn_frame2,
+            text="Exam Mode",
+            text_color="#4A232A",
+            font=("Arial", 14, "bold")
+        )
+        self.exam_mode_label.pack(padx=10, pady=5, anchor="w")
+
+        self.separator = ctk.CTkFrame(self.action_btn_frame2, fg_color="#CD7F32", height=2)
+        self.separator.pack(fill="x", pady=10)
+
+        self.exam_mode_var = ctk.StringVar(value="Exam Mode")
+
+        self.practice_mode_rb = ctk.CTkRadioButton(
+            self.action_btn_frame2,
+            text="Practice Mode",
+            variable=self.exam_mode_var,
+            value="Practice Mode",
+            text_color="#4A232A",  # Text color
+            fg_color="#F5DEB3",  # Radio button background (unchecked state)
+            border_color="#B87333",  # Border color for the radio button
+            hover_color="#D4A373",  # Hover background color
+        )
+        self.practice_mode_rb.pack(padx=10, pady=5, anchor="w")
+
+        self.exam_mode_rb = ctk.CTkRadioButton(
+            self.action_btn_frame2,
+            text="Exam Mode",
+            variable=self.exam_mode_var,
+            value="Exam Mode",
+            text_color="#4A232A",  # Text color
+            fg_color="#F5DEB3",  # Radio button background (unchecked state)
+            border_color="#B87333",  # Border color for the radio button
+            hover_color="#D4A373",  # Hover background color
+        )
+        self.exam_mode_rb.pack(padx=10, pady=5, anchor="w")
+
+        self.submit_button = ctk.CTkButton(
+            self.action_btn_frame2,
+            text="Submit Exam",
+            fg_color="#8B4513",  # SaddleBrown for button background
+            hover_color="#6A2E1F",  # Darker color on hover
+            text_color="#F5F5DC",  # Light color text (cream white)
+            width=200
+        )
+        self.submit_button.pack(padx=10, pady=10)
+
+        self.workspace_frame = ctk.CTkScrollableFrame(
+            self.frame, fg_color="#F5F5DC", border_color="#333333", border_width=0, corner_radius=10,
+            scrollbar_fg_color="#F5F5DC", scrollbar_button_color="#F5F5DC",
+            scrollbar_button_hover_color="#F5F5DC"
+        )
+        self.workspace_frame.pack(padx=25, pady=10, anchor="center", fill="both", expand=True)
+
+        self.create_digital_workspace()
+
+    def create_digital_workspace(self):
+        if self.workspace_frame:
+            self.detail_frame = ctk.CTkFrame(
+                self.workspace_frame, border_color="#B87333", border_width=2,
+                fg_color="#F5F5DC", corner_radius=0, width=200, height=400
+            )
+            self.detail_frame.pack(padx=10, pady=10, fill="x", anchor="center")
+            self.detail_frame.pack_propagate(False)
+
+            self.title_entry = ctk.CTkEntry(
+                self.detail_frame, placeholder_text="Exam Title",
+                height=60, font=ctk.CTkFont(family="Arial", size=32, weight="bold"),
+                border_color="#F5F5DC", justify="center",
+                fg_color="#F5F5DC",
+                text_color="#333333"
+            )
+            self.title_entry.pack(padx=10, pady=10, anchor="center", fill="x")
+
+            self.subject_frame = ctk.CTkFrame(
+                self.detail_frame, fg_color="#F5F5DC", corner_radius=0, width=200, height=400
+            )
+            self.subject_frame.pack(padx=10, pady=10, fill="x", anchor="center")
+
+            self.subject_code_label = ctk.CTkLabel(
+                self.subject_frame,
+                text="Subject Code: ",
+                text_color="#4A232A",
+                font=("Arial", 14, "bold")
+            )
+            self.subject_code_label.pack(pady=5, side="left")
+
+            self.subject_code = ctk.CTkEntry(
+                self.subject_frame, placeholder_text="Enter Subject Code",
+                height=40, font=ctk.CTkFont(family="Arial", size=16, weight="bold"),
+                border_color="#B87333",
+                border_width=2,
+                fg_color="#F5F5DC",
+                text_color="#333333", width=200
+            )
+            self.subject_code.pack(padx=5, pady=10, side="left")
+
+            self.exam_date = ctk.CTkEntry(
+                self.subject_frame, placeholder_text="DD | MM | YYYY",
+                height=40, font=ctk.CTkFont(family="Arial", size=16, weight="bold"),
+                border_color="#B87333",
+                border_width=2,
+                fg_color="#F5F5DC",
+                text_color="#333333", width=200
+            )
+            self.exam_date.pack(padx=10, pady=10, side="right")
+
+            self.exam_date_label = ctk.CTkLabel(
+                self.subject_frame,
+                text="Date: ",
+                text_color="#4A232A",
+                font=("Arial", 14, "bold")
+            )
+            self.exam_date_label.pack(pady=5, side="right")
+
+            self.subject_frame2 = ctk.CTkFrame(
+                self.detail_frame, fg_color="#F5F5DC", corner_radius=0, width=200, height=400
+            )
+            self.subject_frame2.pack(padx=10, pady=10, fill="x", anchor="center")
+
+            self.subject_name_label = ctk.CTkLabel(
+                self.subject_frame2,
+                text="Subject Name: ",
+                text_color="#4A232A",
+                font=("Arial", 14, "bold")
+            )
+            self.subject_name_label.pack(pady=5, side="left")
+
+            self.subject_name = ctk.CTkEntry(
+                self.subject_frame2, placeholder_text="Enter Subject Name",
+                height=40, font=ctk.CTkFont(family="Arial", size=16, weight="bold"),
+                border_color="#B87333",
+                border_width=2,
+                fg_color="#F5F5DC",
+                text_color="#333333", width=600
+            )
+            self.subject_name.pack(pady=10, side="left")
+
+            self.timings_marks_frame = ctk.CTkFrame(
+                self.detail_frame, fg_color="#F5F5DC", corner_radius=0, width=200, height=400
+            )
+            self.timings_marks_frame.pack(padx=10, pady=10, fill="x", anchor="center")
+
+            self.time_label = ctk.CTkLabel(
+                self.timings_marks_frame,
+                text="Time: ",
+                text_color="#4A232A",
+                font=("Arial", 14, "bold")
+            )
+            self.time_label.pack(pady=5, side="left")
+
+            self.total_marks = ctk.CTkEntry(
+                self.timings_marks_frame, placeholder_text="",
+                height=40, font=ctk.CTkFont(family="Arial", size=16, weight="bold"),
+                fg_color="#F5F5DC", border_color="#F5F5DC", border_width=2,
+                text_color="#333333", width=200,
+                state="disabled"
+            )
+            self.total_marks.pack(padx=10, pady=10, side="right")
+
+            self.total_marks_label = ctk.CTkLabel(
+                self.timings_marks_frame,
+                text="Total Marks: ",
+                text_color="#4A232A",
+                font=("Arial", 14, "bold")
+            )
+            self.total_marks_label.pack(pady=5, side="right")
+
+            self.instructions_frame = ctk.CTkFrame(
+                self.detail_frame, fg_color="#F5F5DC", corner_radius=0, width=200, height=400
+            )
+            self.instructions_frame.pack(padx=10, pady=10, fill="x", anchor="center")
+
+            self.instruction_label = ctk.CTkLabel(
+                self.instructions_frame,
+                text="Instructions: ",
+                text_color="#4A232A",
+                font=("Arial", 14, "bold")
+            )
+            self.instruction_label.pack(pady=5, side="left")
+
+            self.instruction_option = ctk.CTkComboBox(
+                self.instructions_frame,
+                values=["Default", "Custom"],
+                fg_color="#F5DEB3",
+                text_color="#4A232A",
+                button_color="#D4A373",
+                button_hover_color="#8B4513",
+                dropdown_fg_color="#DEB887",
+                dropdown_text_color="#4A232A",
+                dropdown_hover_color="#D4A373", border_color="#B87333", width=200
+            )
+            self.instruction_option.pack(pady=10, side="left")
+
+
+
+
+
+
+    def create_symbols_frame(self):
+
+        # Math Symbols
+        ctk.CTkLabel(self.symbols_frame, text="Math Symbols", font=("Arial", 14, "bold"), text_color="#333333").pack(
+            padx=10, pady=10, anchor="w")
+        math_buttons = [
+            ("x²", "x²"),
+            ("x³", "x³"),
+            ("ln", "ln"),
+            ("log₁₀", "log₁₀"),
+            ("logₐ", "logₐ"),
+            ("√", "√"),
+            ("π", "π"),
+            ("∞", "∞"),
+            ("∑", "∑"),
+            ("α", "α"),
+            ("β", "β"),
+            ("γ", "γ"),
+            ("δ", "δ"),
+            ("θ", "θ"),
+            ("λ", "λ"),
+            ("μ", "μ"),
+            ("σ", "σ"),
+            ("Δ", "Δ"),
+            ("Φ", "Φ"),
+            ("ω", "ω"),
+            ("≠", "≠"),
+            ("≈", "≈"),
+            ("≡", "≡"),
+            ("≤", "≤"),
+            ("≥", "≥"),
+            ("∈", "∈"),
+            ("⊂", "⊂"),
+            ("⊃", "⊃"),
+            ("∩", "∩"),
+            ("∪", "∪"),
+            ("∅", "∅"),
+            ("∫", "∫"),
+            ("∑", "∑"),
+            ("∏", "∏"),
+            ("∝", "∝"),
+            ("∥", "∥"),
+            ("∃", "∃"),
+            ("∀", "∀"),
+            ("⇒", "⇒"),
+            ("⇔", "⇔"),
+            ("ℕ", "ℕ"),
+            ("ℝ", "ℝ"),
+            ("ℤ", "ℤ"),
+            ("ℂ", "ℂ"),
+            ("ℚ", "ℚ")
+        ]
+        self.create_button_frame(self.symbols_frame, math_buttons)
+
+        # Chemistry Symbols
+        ctk.CTkLabel(self.symbols_frame, text="Chemistry Symbols", font=("Arial", 14, "bold"),
+                     text_color="#333333").pack(padx=10, pady=10, anchor="w")
+        chemistry_buttons = [
+            ("→", "→"),
+            ("⇌", "⇌"),
+            ("Δ", "Δ"),
+            ("≠", "≠"),
+            ("±", "±"),
+            ("∑", "∑"),
+            ("∫", "∫"),
+            ("•", "•"),
+            ("°", "°"),
+            ("ℳ", "ℳ"),
+            ("⌀", "⌀"),
+            ("⧫", "⧫"),
+            ("⊕", "⊕"),
+            ("⊖", "⊖"),
+            ("⊗", "⊗"),
+            ("‡", "‡"),
+            ("∅", "∅"),
+            ("∩", "∩"),
+            ("⊂", "⊂"),
+            ("≡", "≡"),
+            ("≠", "≠"),
+            ("→", "→"),
+            ("⇌", "⇌"),
+            ("→", "→"),
+            ("𝑀", "𝑀"),
+            ("𝑁", "𝑁"),
+            ("H₂O", "H₂O"),
+            ("CO₂", "CO₂"),
+            ("C₆H₁₂O₆", "C₆H₁₂O₆")
+        ]
+        self.create_button_frame(self.symbols_frame, chemistry_buttons)
+
+        # Physics Symbols
+        ctk.CTkLabel(self.symbols_frame, text="Physics Symbols", font=("Arial", 14, "bold"), text_color="#333333").pack(
+            padx=10, pady=10, anchor="w")
+        physics_buttons = [
+            ("α", "α"),
+            ("β", "β"),
+            ("γ", "γ"),
+            ("Δ", "Δ"),
+            ("λ", "λ"),
+            ("μ", "μ"),
+            ("ω", "ω"),
+            ("Σ", "Σ"),
+            ("Ω", "Ω"),
+            ("π", "π"),
+            ("∞", "∞"),
+            ("∑", "∑"),
+            ("≈", "≈"),
+            ("≡", "≡"),
+            ("⊗", "⊗"),
+            ("⊕", "⊕"),
+            ("⊂", "⊂"),
+            ("∇", "∇"),
+            ("∂", "∂"),
+            ("∅", "∅"),
+            ("↑", "↑"),
+            ("↓", "↓"),
+            ("→", "→"),
+            ("←", "←"),
+            ("∩", "∩"),
+            ("∪", "∪"),
+            ("∈", "∈"),
+            ("ℵ", "ℵ"),
+            ("ℏ", "ℏ"),
+            ("≠", "≠"),
+            ("≡", "≡"),
+            ("⇒", "⇒"),
+            ("⇔", "⇔"),
+            ("∀", "∀"),
+            ("∃", "∃"),
+            ("∝", "∝"),
+            ("∥", "∥"),
+            ("∫", "∫"),
+            ("∑", "∑"),
+            ("∏", "∏"),
+            ("ℂ", "ℂ"),
+            ("ℤ", "ℤ"),
+            ("ℝ", "ℝ"),
+            ("ℕ", "ℕ"),
+            ("ℚ", "ℚ"),
+            ("ρ", "ρ"),
+            ("ε", "ε"),
+            ("k", "k"),
+            ("ε₀", "ε₀")
+        ]
+        self.create_button_frame(self.symbols_frame, physics_buttons)
+
+    def create_button_frame(self, parent_frame, buttons_list):
+        """ Helper function """
+        button_count = 0
+        for text, symbol in buttons_list:
+            if button_count % 12 == 0:
+                button_frame = ctk.CTkFrame(parent_frame, fg_color="#C8C8A9", corner_radius=10)
+                button_frame.pack(fill="x", anchor="w")
+
+            button = ctk.CTkButton(
+                button_frame,
+                text=text,
+                fg_color="#F5F5DC",
+                text_color="#333333",
+                width=40, height=40,
+                corner_radius=5,
+                hover_color="#C8C8A9",
+                command=lambda text=text, symbol=symbol: self.copyText(symbol, text)
+            )
+            button.pack(side="left", padx=5, pady=5)
+            button_count += 1
 
     def show_api_configurations(self, event=None):
 
@@ -286,6 +773,7 @@ class App(ctk.CTk):
             return
 
         if self.dbx_frame is None:
+            self.clearFrame()
             (ctk.CTkLabel(
                 self.frame, text="API CONFIGURATIONS",
                 font=ctk.CTkFont(family="Game Of Squids", size=28, weight="bold"),
@@ -300,7 +788,7 @@ class App(ctk.CTk):
 
             (ctk.CTkLabel(
                 self.dbx_frame, text=f"Access Token", font=ctk.CTkFont(family="Calibri", size=18, weight="bold"),
-                text_color=get_value("theme.text_primary", self.theme, "#")
+                text_color=get_value("theme.text_primary", self.theme, None)
             ).grid(row=0, column=1, padx=10, pady=10, sticky="w"))
 
             self.access_token_entry = ctk.CTkEntry(
@@ -439,6 +927,7 @@ class App(ctk.CTk):
                     ), text="No Internet Connection", text_color="#FFFFFF", compound="right", padx=10, pady=10, fg_color="#D32F2F"
                 )
                 self.message_desc.configure(text="Oops! It seems we are having trouble connecting to the server. Please check your connection and retry.")
+                self.close_btn.pack_forget()
 
     def runNetworkCheck(self):
         while True:

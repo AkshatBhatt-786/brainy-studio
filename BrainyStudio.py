@@ -1,11 +1,11 @@
 import os
 import sys
-from json import JSONDecodeError
-
+import pygame
 import pyperclip
 import yaml
 import json
 import customtkinter as ctk
+from datetime import datetime
 import time
 from PIL import Image
 from typing import Tuple
@@ -63,6 +63,13 @@ def center_window(parent: ctk.CTk, width: int, height: int, scale_factor: float 
     return f"{width}x{height}+{scaled_width}+{scaled_height}"
 
 
+def play_sound(sound_type: str):
+    if sound_type == "error":
+        pygame.mixer.music.load(get_resource_path("assets\\tunes\\error-notify.mp3"))
+    if sound_type == "success":
+        pygame.mixer.music.load(get_resource_path("assets\\tunes\\success-notify.mp3"))
+    pygame.mixer.music.play()
+
 
 class ThemeManager:
 
@@ -111,6 +118,7 @@ class App(ctk.CTk):
         self.dbx_frame = None
         self.btn_frame = None
         # Create Exam configuration
+        self.temp = {"workspace": {}}
         self.questions = {}
 
 
@@ -564,10 +572,122 @@ class App(ctk.CTk):
             )
             self.instruction_option.pack(pady=10, side="left")
 
+            self.submit_paper_details_btn = ctk.CTkButton(
+                self.workspace_frame,
+                text="Submit Details",
+                fg_color="#8B4513",
+                hover_color="#6A2E1F",
+                text_color="#F5F5DC",
+                width=200, height=42,
+                command=lambda: self.authenticate_paper_details()
+            )
+            self.submit_paper_details_btn.pack(padx=10, pady=10, side="right")
 
+    def authenticate_paper_details(self):
 
+        exam_title = self.title_entry.get()
+        subject_code = self.subject_code.get()
+        date_of_exam = self.exam_date.get()
+        subject_name = self.subject_name.get()
 
+        if subject_code == "" or date_of_exam == "" or subject_name == "" or exam_title == "":
+            self.showMessageBox()
+            play_sound("error")
+            self.message_title.configure(
+                image=ctk.CTkImage(
+                    light_image=Image.open(get_resource_path("assets\\symbols\\triangle-warning.png")), size=(20, 20)
+                ), text="All Fields Are Required", text_color="#FFFFFF", compound="right", padx=10, pady=10,
+                fg_color="#D32F2F"
+            )
+            self.message_desc.configure(
+                text="To proceed, please ensure every field is filled out accurately. All fields are mandatory for successful submission.")
+            return
 
+        try:
+            exam_date = datetime.strptime(date_of_exam, "%d-%m-%Y")
+
+            if exam_date < datetime.today():
+                self.showMessageBox()
+                play_sound("error")
+                self.message_title.configure(
+                    image=ctk.CTkImage(
+                        light_image=Image.open(get_resource_path("assets\\symbols\\calendar.png")),
+                        size=(20, 20)
+                    ), text="Invalid Date", text_color="#FFFFFF", compound="right", padx=10, pady=10,
+                    fg_color="#D32F2F"
+                )
+                self.message_desc.configure(text="The exam date cannot be in the past. Please enter a valid future date to proceed.")
+                return
+        except ValueError:
+            play_sound("error")
+            self.showMessageBox()
+            self.message_title.configure(
+                image=ctk.CTkImage(
+                    light_image=Image.open(get_resource_path("assets\\symbols\\calendar.png")),
+                    size=(20, 20)
+                ), text="Invalid Date Format", text_color="#FFFFFF", compound="right", padx=10, pady=10,
+                fg_color="#D32F2F"
+            )
+            self.message_desc.configure(text="The date entered does not match the required format. Please use the format DD-MM-YYYY.")
+            return
+
+        play_sound("success")
+        self.showMessageBox()
+        self.message_title.configure(text="Validation Successful", image=ctk.CTkImage(
+            light_image=(Image.open(get_resource_path("assets\\symbols\\check-circle.png"))),
+            size=(20, 20)
+        ), text_color="#FFFFFF", compound="right", padx=10, pady=10, fg_color="#4CAF50")
+        self.message_desc.configure(text="The details have been successfully validated and saved. You may make any further changes if required before finalizing.")
+        self.temp["workspace"]["details"] = {
+            "exam_title": exam_title, "subject_code": subject_code, "subject_name": subject_name,
+            "date_of_exam": date_of_exam, "total_marks": 0, "time": None
+        }
+        self.title_entry.delete(0, len(exam_title))
+        self.title_entry.insert(0, exam_title.upper())
+        self.subject_code.delete(0, len(subject_code))
+        self.subject_code.insert(0, subject_code.upper())
+        self.subject_name.delete(0, len(subject_name))
+        self.subject_name.insert(0, subject_name.upper())
+        self.title_entry.configure(state="disabled")
+        self.subject_code.configure(state="disabled", border_color="#F5F5DC")
+        self.exam_date.configure(state="disabled", border_color="#F5F5DC")
+        self.subject_name.configure(state="disabled", border_color="#F5F5DC")
+        self.instruction_option.configure(state="disabled")
+        self.submit_paper_details_btn.pack_forget()
+        self.submit_paper_details_btn.destroy()
+        ic(self.temp["workspace"])
+        self.create_action_btn()
+
+    def create_action_btn(self):
+
+        self.workspace_button_bottom_frame = ctk.CTkFrame(
+            self.workspace_frame,
+            fg_color="#F5F5DC", corner_radius=0, width=200, height=100
+        )
+        self.workspace_button_bottom_frame.pack(padx=10, fill="x", anchor="center")
+        self.workspace_button_bottom_frame.pack_propagate(False)
+
+        self.add_question_btn = ctk.CTkButton(
+            self.workspace_button_bottom_frame,
+            text="Add Question",
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add.png")), size=(30, 30)),
+            fg_color="#8B4513",
+            hover_color="#6A2E1F",
+            text_color="#F5F5DC",
+            width=120, height=42
+        )
+        self.add_question_btn.pack(padx=10, pady=10, side="right")
+
+        self.add_yes_no_btn = ctk.CTkButton(
+            self.workspace_button_bottom_frame,
+            text="Add Yes/No",
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add.png")), size=(30, 30)),
+            fg_color="#8B4513",
+            hover_color="#6A2E1F",
+            text_color="#F5F5DC",
+            width=120, height=42
+        )
+        self.add_yes_no_btn.pack(padx=10, pady=10, side="right")
 
     def create_symbols_frame(self):
 
@@ -619,7 +739,9 @@ class App(ctk.CTk):
             ("ℝ", "ℝ"),
             ("ℤ", "ℤ"),
             ("ℂ", "ℂ"),
-            ("ℚ", "ℚ")
+            ("ℚ", "ℚ"),
+            ("I", "I"), ("II", "II"), ("III", "III"), ("IV", "IV"), ("V", "V"),
+            ("VI", "VI"), ("VII", "VII"), ("VIII", "VIII"), ("IX", "IX"), ("X", "X")
         ]
         self.create_button_frame(self.symbols_frame, math_buttons)
 
@@ -846,6 +968,7 @@ class App(ctk.CTk):
 
     def copyText(self, text: str, name: str):
         pyperclip.copy(text)
+        play_sound("success")
         self.showMessageBox()
         self.message_title.configure(text="Copy Successful", image=ctk.CTkImage(
             light_image=(Image.open(get_resource_path("assets\\symbols\\check-circle.png"))),
@@ -937,5 +1060,6 @@ class App(ctk.CTk):
 
 if __name__ == '__main__':
     themeManager = ThemeManager()
+    pygame.mixer.init()
     ic(themeManager.theme)
     App().run()

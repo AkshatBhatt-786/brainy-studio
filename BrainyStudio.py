@@ -88,6 +88,64 @@ class ThemeManager:
         return get_value(component_name, self.theme, {})
 
 
+class TagDialog(ctk.CTkToplevel):
+
+    def __init__(self, parent, title, text):
+        super().__init__(parent)
+        self.title(title)
+        self.geometry(center_window(parent, 400, 200, parent._get_window_scaling(), (0, 50)))
+
+        # Vintage Background color
+        self.configure(fg_color="#FAEBD7")  # Antique white
+        self.attributes("-topmost", True)
+
+        # Vintage styled label
+        self.label = ctk.CTkLabel(self, text=text, font=ctk.CTkFont(family="Calibri", size=14),
+                                  text_color="#4B0030")  # Deep vintage purple
+        self.label.pack(pady=20)
+
+        # Vintage styled entry with a hint of greenish accent
+        self.entry = ctk.CTkEntry(self,
+                                  fg_color="#FAF0E6",  # Linen-like background
+                                  text_color="#00695C",  # Muted teal
+                                  border_color="#B2DFDB")  # Soft green
+        self.entry.pack(pady=10, padx=20, fill="x")
+
+        # Transparent background for the button frame (keeps focus on buttons)
+        self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.btn_frame.pack(pady=10)
+
+        # Accent-themed submit button (teal and vintage accents)
+        self.submit_btn = ctk.CTkButton(self.btn_frame, text="Add",
+                                        fg_color="#00BCD4",  # Accent teal
+                                        hover_color="#0097A7",  # Darker teal on hover
+                                        text_color="#FFFFFF",
+                                        font=ctk.CTkFont(family="Calibri", size=16, weight="bold"),
+                                        command=self.submit, width=120, height=36, border_width=2)
+        self.submit_btn.pack(side="left", padx=5)
+
+        # Vintage-styled cancel button (subtle red tone for contrast)
+        self.cancel_btn = ctk.CTkButton(self.btn_frame, text="Cancel",
+                                        fg_color="#D32F2F",  # Vintage red
+                                        hover_color="#C62828",  # Darker red on hover
+                                        text_color="#FFFFFF",
+                                        font=ctk.CTkFont(family="Calibri", size=16, weight="bold"),
+                                        command=self.destroy, width=120, height=36, border_width=2)
+        self.cancel_btn.pack(side="right", padx=5)
+
+        # Store the input result
+        self.result = None
+        self.entry.focus()
+
+    def submit(self):
+        self.result = self.entry.get()
+        self.destroy()
+
+    def get_input(self):
+        self.wait_window()
+        return self.result
+
+
 class App(ctk.CTk):
 
     def __init__(self):
@@ -118,10 +176,10 @@ class App(ctk.CTk):
         self.dbx_frame = None
         self.btn_frame = None
         # Create Exam configuration
+        self.count = 0
         self.temp = {"workspace": {}}
+        self.tags = ["None"]
         self.questions = {}
-
-
 
     def build(self):
         self.configure(fg_color=get_value("theme.primary", self.theme, "#E5D3FF"))
@@ -164,12 +222,12 @@ class App(ctk.CTk):
                     image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\menu-burger.png")), size=(25, 25)), width=20, height=20, command=self.animate)
                 self.toggle_btn.grid(row=0, column=0, pady=20, padx=5, sticky="nsew")
 
-                self.toggle_btn = ctk.CTkButton(
+                self.create_paper_btn = ctk.CTkButton(
                     self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
                     hover_color="#A8DADC", corner_radius=18, text="",
                     image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add-document.png")),
                                        size=(25, 25)), width=20, height=20, command=lambda: self.display_content("create-exam"))
-                self.toggle_btn.grid(row=1, column=0, pady=20, padx=5, sticky="nsew")
+                self.create_paper_btn.grid(row=1, column=0, pady=20, padx=5, sticky="nsew")
 
     def showMessageBox(self):
         if self.message_box is None:
@@ -327,21 +385,17 @@ class App(ctk.CTk):
         self.separator = ctk.CTkFrame(self.action_btn_frame, fg_color="#CD7F32", height=2)
         self.separator.pack(fill="x", pady=10)
 
-        #     fg_color="#8B4513",  # SaddleBrown for button background
-        #     hover_color="#6A2E1F",  # Darker color on hover
-        #     text_color="#F5F5DC",
-
         self.grading_options = ctk.CTkComboBox(
             self.action_btn_frame,
             values=["Percentage", "Points-based", "Pass/Fail"],
-            fg_color="#F5DEB3",  # Dropdown background color
-            text_color="#4A232A",  # Text color
-            button_color="#D4A373",  # Hover background for dropdown button
-            button_hover_color="#8B4513",  # Button hover color
-            dropdown_fg_color="#DEB887",  # Dropdown popup background
-            dropdown_text_color="#4A232A",  # Dropdown popup text
-            dropdown_hover_color="#D4A373",  # Dropdown item hover background
-            border_color="#B87333",  # Border color
+            fg_color="#F5DEB3",
+            text_color="#4A232A",
+            button_color="#D4A373",
+            button_hover_color="#8B4513",
+            dropdown_fg_color="#DEB887",
+            dropdown_text_color="#4A232A",
+            dropdown_hover_color="#D4A373",
+            border_color="#B87333",
             width=200
         )
         self.grading_options.set("Percentage")  # Default selection
@@ -396,10 +450,10 @@ class App(ctk.CTk):
             text="Practice Mode",
             variable=self.exam_mode_var,
             value="Practice Mode",
-            text_color="#4A232A",  # Text color
-            fg_color="#F5DEB3",  # Radio button background (unchecked state)
-            border_color="#B87333",  # Border color for the radio button
-            hover_color="#D4A373",  # Hover background color
+            text_color="#4A232A",
+            fg_color="#F5DEB3",
+            border_color="#B87333",
+            hover_color="#D4A373",
         )
         self.practice_mode_rb.pack(padx=10, pady=5, anchor="w")
 
@@ -408,20 +462,23 @@ class App(ctk.CTk):
             text="Exam Mode",
             variable=self.exam_mode_var,
             value="Exam Mode",
-            text_color="#4A232A",  # Text color
-            fg_color="#F5DEB3",  # Radio button background (unchecked state)
-            border_color="#B87333",  # Border color for the radio button
-            hover_color="#D4A373",  # Hover background color
+            text_color="#4A232A",
+            fg_color="#F5DEB3",
+            border_color="#B87333",
+            hover_color="#D4A373",
         )
         self.exam_mode_rb.pack(padx=10, pady=5, anchor="w")
 
         self.submit_button = ctk.CTkButton(
             self.action_btn_frame2,
-            text="Submit Exam",
-            fg_color="#8B4513",  # SaddleBrown for button background
-            hover_color="#6A2E1F",  # Darker color on hover
-            text_color="#F5F5DC",  # Light color text (cream white)
-            width=200
+            text="SAVE",
+            image=ctk.CTkImage(Image.open(get_resource_path("assets\\symbols\\diskette.png")), size=(30, 30)),
+            fg_color="#8B4513",
+            hover_color="#6A2E1F",
+            text_color="#F5F5DC",
+            compound="left",
+            width=200,
+            height=50
         )
         self.submit_button.pack(padx=10, pady=10)
 
@@ -584,7 +641,6 @@ class App(ctk.CTk):
             self.submit_paper_details_btn.pack(padx=10, pady=10, side="right")
 
     def authenticate_paper_details(self):
-
         exam_title = self.title_entry.get()
         subject_code = self.subject_code.get()
         date_of_exam = self.exam_date.get()
@@ -674,7 +730,8 @@ class App(ctk.CTk):
             fg_color="#8B4513",
             hover_color="#6A2E1F",
             text_color="#F5F5DC",
-            width=120, height=42
+            width=120, height=42,
+            command=lambda: self.addQuestion()
         )
         self.add_question_btn.pack(padx=10, pady=10, side="right")
 
@@ -685,9 +742,311 @@ class App(ctk.CTk):
             fg_color="#8B4513",
             hover_color="#6A2E1F",
             text_color="#F5F5DC",
-            width=120, height=42
+            width=120, height=42,
+            command=lambda: self.addTrueFalse()
         )
         self.add_yes_no_btn.pack(padx=10, pady=10, side="right")
+
+        self.tag_btn = ctk.CTkButton(
+            self.workspace_button_bottom_frame,
+            text="Add Tag",
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\tags.png")), size=(30, 30)),
+            fg_color="#8B4513",
+            hover_color="#6A2E1F",
+            text_color="#F5F5DC",
+            width=120, height=42,
+            command=lambda: self.addTag()
+        )
+        self.tag_btn.pack(padx=10, pady=10, side="right")
+
+    def addQuestion(self):
+        self.count += 1
+        question_frame = ctk.CTkFrame(
+            self.workspace_frame, corner_radius=10, height=450,
+            fg_color="#FAEBD7", border_color="#A9A9A9", border_width=2
+        )
+        question_frame.pack(padx=20, pady=20, anchor="center", expand=True, fill="both")
+        question_frame.pack_propagate(False)
+
+        info_frame = ctk.CTkFrame(
+            question_frame, fg_color="#F5F5DC", border_color="#8B4513"
+        )
+        info_frame.pack(padx=10, pady=10, anchor="w", fill="x")
+
+        tag_label = ctk.CTkLabel(
+            info_frame, text="Tag: ", font=ctk.CTkFont(family="Calibri", size=18), text_color="#6B8E23",
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\tags.png")), size=(20, 20)),
+            padx=10, compound="right"
+        )
+        tag_label.pack(padx=10, pady=10, side="left")
+
+        tag_entry = ctk.CTkComboBox(
+            info_frame,
+            values=self.tags,
+            width=210,
+            font=ctk.CTkFont(family="Calibri", size=18),
+            fg_color="#F5F5DC",  # Matching vintage beige
+            text_color="#4B0030",  # Deep vintage purple
+            button_color="#8B4513",  # Saddle brown button
+            button_hover_color="#A0522D",  # Sienna hover color
+            dropdown_fg_color="#FAF0E6",  # Linen dropdown background
+            dropdown_text_color="#4B0030",  # Consistent text color
+            dropdown_hover_color="#D2B48C",  # Tan hover effect
+            dropdown_font=ctk.CTkFont(family="Calibri", size=18)
+        )
+        tag_entry.pack(padx=0, pady=10, side="left")
+
+        delete_button = ctk.CTkButton(
+            info_frame, text="", image=ctk.CTkImage(Image.open(get_resource_path("assets\\symbols\\delete_btn.png")), size=(20, 20)),
+            font=ctk.CTkFont(family="Calibri", size=14),
+            fg_color="#B22222",
+            hover_color="#8B0000",
+            width=40,
+            command=lambda qn=self.count: self.delete_question(qn)
+        )
+        delete_button.pack(padx=10, pady=10, side="right")
+
+        marks_entry = ctk.CTkEntry(
+            info_frame, placeholder_text="marks: ",
+            text_color="#4B0030",
+            fg_color="#F5F5DC",
+            border_color="#8B4513",
+            placeholder_text_color="#8B4513",
+            border_width=2,
+            font=ctk.CTkFont(family="Calibri", size=14, slant="italic"),
+            width=60
+        )
+        marks_entry.pack(side="right")
+
+        question_text_box = ctk.CTkTextbox(
+            question_frame, width=1000, height=100,
+            corner_radius=10, font=ctk.CTkFont(family="Calibri", size=20),
+            fg_color="#FAF0E6",
+            border_color="#A0522D",
+            text_color="#4B0030",
+            border_width=2
+        )
+        question_text_box.pack(padx=10, pady=10, anchor="w", fill="x")
+
+        options = ["A", "B", "C", "D"]
+        checkbox_states = {option: False for option in options}
+        checkboxes = {}
+        option_entries = {}
+
+        for i, option in enumerate(options, start=1):
+            option_frame = ctk.CTkFrame(
+                question_frame, width=950, height=50, fg_color="#FAF0E6",
+                border_color="#8B4513",  border_width=2
+            )
+            option_frame.pack(padx=10, pady=5, anchor="w")
+            option_frame.grid_propagate(False)
+
+            checkbox = ctk.CTkCheckBox(
+                option_frame, text=f"{options[i - 1]}. ",
+                height=20, fg_color="#F5F5DC",
+                font=ctk.CTkFont(family="Calibri", size=18, weight="bold"),
+                hover_color="#A0522D",
+                checkmark_color="#4B0030",
+                border_color="#8B4513",
+                text_color="#4B0030",
+                corner_radius=50,
+                command=lambda opt=option, qn=self.count: self.on_checkbox_click(opt, qn)
+            )
+            checkbox.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+            checkboxes[option] = checkbox
+
+            options_entry = ctk.CTkEntry(
+                option_frame,
+                placeholder_text=f"Option {i}",
+                border_width=2,
+                width=800,
+                height=30,
+                font=ctk.CTkFont(family="Calibri", size=18),
+                fg_color="#F5F5DC",
+                border_color="#F5F5DC",
+                placeholder_text_color="#A0522D",
+                text_color="#4B0030"
+            )
+            options_entry.grid(row=0, column=1, padx=10, pady=10, sticky="w")
+            option_entries[option] = options_entry
+
+            self.questions[self.count] = {
+                "frame": question_frame,
+                "question": question_text_box,
+                "checkbox_states": checkbox_states,
+                "checkboxes": checkboxes,
+                "option_entries": option_entries,
+                "tag": tag_entry,
+                "marks": marks_entry,
+                "type": "question"
+            }
+
+            self.workspace_button_bottom_frame.pack_forget()
+            self.workspace_button_bottom_frame.pack(padx=20, pady=20, expand=True, fill="both")
+
+    def addTrueFalse(self):
+        self.count += 1
+
+        true_false_frame = ctk.CTkFrame(
+            self.workspace_frame, corner_radius=10, height=350,
+            fg_color="#FAEBD7", border_color="#A9A9A9", border_width=2
+        )
+        true_false_frame.pack(padx=20, pady=20, anchor="center", expand=True, fill="both")
+        true_false_frame.pack_propagate(False)
+
+        info_frame = ctk.CTkFrame(
+            true_false_frame, fg_color="#F5F5DC", border_color="#8B4513"
+        )
+        info_frame.pack(padx=10, pady=10, anchor="w", fill="x")
+
+        tag_label = ctk.CTkLabel(
+            info_frame, text="Tag: ", font=ctk.CTkFont(family="Calibri", size=18), text_color="#6B8E23"
+        )
+        tag_label.pack(padx=10, pady=10, side="left")
+
+        tag_entry = ctk.CTkComboBox(
+            info_frame,
+            values=self.tags,
+            width=210,
+            font=ctk.CTkFont(family="Calibri", size=18),
+            fg_color="#F5F5DC",
+            text_color="#4B0030",
+            button_color="#8B4513",
+            button_hover_color="#A0522D",
+            dropdown_fg_color="#FAF0E6",
+            dropdown_text_color="#4B0030",
+            dropdown_hover_color="#D2B48C",
+            dropdown_font=ctk.CTkFont(family="Calibri", size=18)
+        )
+        tag_entry.pack(padx=0, pady=10, side="left")
+
+        delete_button = ctk.CTkButton(
+            info_frame, text="",
+            image=ctk.CTkImage(Image.open(get_resource_path("assets\\symbols\\delete_btn.png")), size=(20, 20)),
+            font=ctk.CTkFont(family="Calibri", size=14),
+            fg_color="#B22222",
+            hover_color="#8B0000",
+            width=40,
+            command=lambda qn=self.count: self.delete_question(qn)
+        )
+        delete_button.pack(padx=10, pady=10, side="right")
+
+        marks_entry = ctk.CTkEntry(
+            info_frame, placeholder_text="marks: ",
+            text_color="#4B0030",
+            fg_color="#F5F5DC",
+            border_color="#8B4513",
+            placeholder_text_color="#8B4513",
+            border_width=2,
+            font=ctk.CTkFont(family="Calibri", size=14, slant="italic"),
+            width=60
+        )
+        marks_entry.pack(side="right")
+
+        question_text_box = ctk.CTkTextbox(
+            true_false_frame, width=1000, height=100,
+            corner_radius=10, font=ctk.CTkFont(family="Calibri", size=20),
+            fg_color="#FAF0E6",
+            border_color="#A0522D",
+            text_color="#4B0030",
+            border_width=2
+        )
+        question_text_box.pack(padx=10, pady=10, anchor="w", fill="x")
+
+        options = ["True", "False"]
+        checkbox_states = {option: False for option in options}
+        checkboxes = {}
+        option_entries = {}
+
+        for i, option in enumerate(options, start=1):
+            option_frame = ctk.CTkFrame(
+                true_false_frame, width=950, height=50, fg_color="#FAF0E6",
+                border_color="#8B4513", border_width=2
+            )
+            option_frame.pack(padx=10, pady=5, anchor="w")
+            option_frame.grid_propagate(False)
+
+            checkbox = ctk.CTkCheckBox(
+                option_frame, text=f"{options[i - 1]}. ",
+                height=20, fg_color="#F5F5DC",
+                font=ctk.CTkFont(family="Calibri", size=18, weight="bold"),
+                hover_color="#A0522D",
+                checkmark_color="#4B0030",
+                border_color="#8B4513",
+                text_color="#4B0030",
+                corner_radius=50,
+                command=lambda opt=option, qn=self.count: self.on_checkbox_click(opt, qn)
+            )
+            checkbox.grid(row=0, column=0, padx=10, pady=10, sticky="w")
+            checkboxes[option] = checkbox
+
+        self.questions[self.count] = {
+            "frame": true_false_frame,
+            "question": question_text_box,
+            "checkbox_states": checkbox_states,
+            "checkboxes": checkboxes,
+            "tag": tag_entry,
+            "marks": marks_entry,
+            "type": "yes_no"
+        }
+
+        self.workspace_button_bottom_frame.pack_forget()
+        self.workspace_button_bottom_frame.pack(padx=20, pady=20, expand=True, fill="both")
+
+    def on_checkbox_click(self, selected_option, question_number):
+        checkbox_states = self.questions[question_number]["checkbox_states"]
+
+        for option in checkbox_states:
+            checkbox_states[option] = False
+
+        checkbox_states[selected_option] = True
+
+        self.questions[question_number]["checkbox_states"] = checkbox_states
+
+        checkboxes = self.questions[question_number]["checkboxes"]
+        for option, checkbox in checkboxes.items():
+            if checkbox_states[option]:
+                checkbox.select()
+            else:
+                checkbox.deselect()
+
+        question_type = self.questions[question_number]["type"]
+        if question_type == "yes_no":
+            return
+
+    def addTag(self):
+        dialog = TagDialog(self, title="Add a New Subject Tag", text="Please enter a unique tag name to categorize your subject. \nTags help in organizing and improving navigation.")
+
+        tag = dialog.get_input()
+        if tag is not None:
+            if tag == "" or tag in self.tags:
+                return
+            else:
+                self.tags.append(tag)
+                for question in self.questions.keys():
+                    data = self.questions.get(question)
+                    combo = data.get("tag")
+                    combo.configure(values=self.tags)
+                play_sound("success")
+                self.showMessageBox()
+                self.message_title.configure(text="Tag Added", image=ctk.CTkImage(
+                    light_image=(Image.open(get_resource_path("assets\\symbols\\check-circle.png"))),
+                    size=(20, 20)
+                ), text_color="#FFFFFF", compound="right", padx=10, pady=10, fg_color="#4CAF50")
+                self.message_desc.configure(
+                    text=f"The {tag} tag added successfully")
+
+    def delete_question(self, question_id):
+        if question_id in self.questions:
+            question_frame = self.questions[question_id].get("frame")
+
+            if question_frame:
+                question_frame.destroy()
+
+            del self.questions[question_id]
+
+            self.workspace_button_bottom_frame.pack_forget()
+            self.workspace_button_bottom_frame.pack(padx=20, pady=20, expand=True, fill="both")
 
     def create_symbols_frame(self):
 
@@ -965,7 +1324,6 @@ class App(ctk.CTk):
             ))
             self.edit_configuration_btn.pack(padx=10, pady=10, side="right")
 
-
     def copyText(self, text: str, name: str):
         pyperclip.copy(text)
         play_sound("success")
@@ -1050,7 +1408,6 @@ class App(ctk.CTk):
                     ), text="No Internet Connection", text_color="#FFFFFF", compound="right", padx=10, pady=10, fg_color="#D32F2F"
                 )
                 self.message_desc.configure(text="Oops! It seems we are having trouble connecting to the server. Please check your connection and retry.")
-                self.close_btn.pack_forget()
 
     def runNetworkCheck(self):
         while True:

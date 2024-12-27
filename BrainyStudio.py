@@ -4,17 +4,94 @@ import pygame
 import pyperclip
 import yaml
 import json
-import customtkinter as ctk
-from datetime import datetime
+import base64
+import pickle
 import time
+import customtkinter as ctk
+from tkinter import messagebox
+from datetime import datetime
 from PIL import Image
 from typing import Tuple
 from icecream import ic
 from threading import Thread
 from socket import create_connection
+from cryptography.fernet import Fernet
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
 ic.configureOutput(prefix="debug", includeContext=True, contextAbsPath=True)
+
+# Services
+
+
+class EncryptionService:
+
+    def __init__(self, data: dict | None, filepath: str, password: str) -> None:
+        self.data = data
+        self.filepath = filepath
+        self.password = password
+        ic(f"Encryption Service - initialised with filepath: {self.filepath}")
+        ic(f"Input Data: {self.data}")
+        ic(f"Using Password: {'x' * len(self.password)}")
+
+    def decryptData(self) -> None:
+        ic("Encryption Service - Starting Decryption Process.")
+        with open(self.filepath, 'rb') as file:
+            if not file:
+                return None
+            salt = file.readline().strip().decode()
+            encrypted_data = file.read()
+            ic(f"Reading salt: {salt}")
+            ic(f"Reading encrypted data size: {len(encrypted_data)} bytes")
+            file.close()
+
+        key, _ = self.getKey(salt=salt)
+        fernet = Fernet(key)
+        decrypted_data = fernet.decrypt(encrypted_data)
+        ic("Decryption successful. Data loaded successfully.")
+        ic(f"Decrypted data: {self.data}")
+        data = pickle.loads(decrypted_data)
+        self.data = data
+        return
+
+    def encryptData(self) -> None:
+        ic("Encryption Service - Starting Encryption Process.")
+        key, salt = self.getKey()
+        fernet = Fernet(key)
+        records = pickle.dumps(self.data)
+        encrypted_data = fernet.encrypt(records)
+
+        with open(self.filepath, 'wb') as file:
+            if file:
+                file.write(salt.encode() + b'\n' + encrypted_data)
+                ic("Encryption successful. Data written to file.")
+                ic(f"Wrote salt: {salt} and encrypted data of size: {len(encrypted_data)} bytes")
+                file.close()
+            else:
+                pass
+
+    def getKey(self, salt=None):
+        if salt is None:
+            salt = os.urandom(16)
+            ic(f"Generated new salt: {salt}")
+        else:
+            salt = base64.urlsafe_b64decode(salt)
+            ic(f"Decoded salt from input: {salt}")
+
+        kdf = PBKDF2HMAC(
+            algorithm=hashes.SHA256(),
+            length=32,
+            salt=salt,
+            iterations=100_000,
+            backend=default_backend()
+        )
+
+        key = base64.urlsafe_b64encode(kdf.derive(self.password.encode()))
+        ic('Derived encryption key successfully.')
+        return key, base64.urlsafe_b64encode(salt).decode()
+
 
 # utils methods
 
@@ -93,47 +170,41 @@ class TagDialog(ctk.CTkToplevel):
     def __init__(self, parent, title, text):
         super().__init__(parent)
         self.title(title)
+        self.overrideredirect(True)
         self.geometry(center_window(parent, 400, 200, parent._get_window_scaling(), (0, 50)))
 
-        # Vintage Background color
-        self.configure(fg_color="#FAEBD7")  # Antique white
+        self.configure(fg_color="#FAEBD7")
         self.attributes("-topmost", True)
 
-        # Vintage styled label
         self.label = ctk.CTkLabel(self, text=text, font=ctk.CTkFont(family="Calibri", size=14),
-                                  text_color="#4B0030")  # Deep vintage purple
+                                  text_color="#4B0030")
         self.label.pack(pady=20)
 
-        # Vintage styled entry with a hint of greenish accent
         self.entry = ctk.CTkEntry(self,
-                                  fg_color="#FAF0E6",  # Linen-like background
-                                  text_color="#00695C",  # Muted teal
-                                  border_color="#B2DFDB")  # Soft green
+                                  fg_color="#FAF0E6",
+                                  text_color="#00695C",
+                                  border_color="#B2DFDB")
         self.entry.pack(pady=10, padx=20, fill="x")
 
-        # Transparent background for the button frame (keeps focus on buttons)
         self.btn_frame = ctk.CTkFrame(self, fg_color="transparent")
         self.btn_frame.pack(pady=10)
 
-        # Accent-themed submit button (teal and vintage accents)
         self.submit_btn = ctk.CTkButton(self.btn_frame, text="Add",
-                                        fg_color="#00BCD4",  # Accent teal
-                                        hover_color="#0097A7",  # Darker teal on hover
+                                        fg_color="#00BCD4",
+                                        hover_color="#0097A7",
                                         text_color="#FFFFFF",
                                         font=ctk.CTkFont(family="Calibri", size=16, weight="bold"),
                                         command=self.submit, width=120, height=36, border_width=2)
         self.submit_btn.pack(side="left", padx=5)
 
-        # Vintage-styled cancel button (subtle red tone for contrast)
         self.cancel_btn = ctk.CTkButton(self.btn_frame, text="Cancel",
-                                        fg_color="#D32F2F",  # Vintage red
-                                        hover_color="#C62828",  # Darker red on hover
+                                        fg_color="#D32F2F",
+                                        hover_color="#C62828",
                                         text_color="#FFFFFF",
                                         font=ctk.CTkFont(family="Calibri", size=16, weight="bold"),
                                         command=self.destroy, width=120, height=36, border_width=2)
         self.cancel_btn.pack(side="right", padx=5)
 
-        # Store the input result
         self.result = None
         self.entry.focus()
 
@@ -207,6 +278,18 @@ class App(ctk.CTk):
                                                          scrollbar_button_hover_color="#E1F5FE")
                 self.name_frame.grid(row=0, column=0, padx=(10, 5), pady=10, sticky="nsew")
                 self.name_frame.pack_propagate(False)
+                # self.name_frame.grid_propagate(flag=False)
+
+                self.transparent_frame = ctk.CTkFrame(
+                    self.name_frame, fg_color="transparent"
+                )
+                self.transparent_frame.grid(row=0, column=0, pady=20, padx=10, sticky="nsew")
+
+                logo = ctk.CTkLabel(
+                    self.transparent_frame, image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\images\\logo.png")), size=(40, 40)),
+                    text="BRAINY STUDIO", text_color="#333333", compound="top"
+                )
+                logo.pack(padx=10, anchor="center", side="right")
 
             if self.icon_frame is None:
                 self.icon_frame = ctk.CTkScrollableFrame(self.sidebar, fg_color="#C4E4E7", corner_radius=8, width=60,
@@ -308,6 +391,9 @@ class App(ctk.CTk):
             self.show_create_exam_view()
 
     def show_create_exam_view(self):
+
+        self.create_paper_btn.configure(state="disabled", fg_color="#C8C8A9")
+
         self.header_frame = ctk.CTkFrame(self.frame, fg_color="#F5F5DC", corner_radius=0)
         self.header_frame.pack(padx=25, pady=10, anchor="center", fill="x")
 
@@ -422,7 +508,7 @@ class App(ctk.CTk):
             border_color="#B87333",
             width=200
         )
-        self.difficulty_level.set("Percentage")
+        self.difficulty_level.set("Easy")
         self.difficulty_level.pack(padx=10, pady=5)
 
         self.action_btn_frame2 = ctk.CTkFrame(self.header_frame, fg_color="#D2B48C", corner_radius=0, width=200)
@@ -478,7 +564,8 @@ class App(ctk.CTk):
             text_color="#F5F5DC",
             compound="left",
             width=200,
-            height=50
+            height=50,
+            command=lambda: self.saving_new_paper_process()
         )
         self.submit_button.pack(padx=10, pady=10)
 
@@ -493,6 +580,10 @@ class App(ctk.CTk):
 
     def create_digital_workspace(self):
         if self.workspace_frame:
+
+            if self.temp["workspace"] != {}:
+                messagebox.askyesno("Save Data", "Do you want to save the last changes you made ?")
+            
             self.detail_frame = ctk.CTkFrame(
                 self.workspace_frame, border_color="#B87333", border_width=2,
                 fg_color="#F5F5DC", corner_radius=0, width=200, height=400
@@ -695,8 +786,8 @@ class App(ctk.CTk):
         ), text_color="#FFFFFF", compound="right", padx=10, pady=10, fg_color="#4CAF50")
         self.message_desc.configure(text="The details have been successfully validated and saved. You may make any further changes if required before finalizing.")
         self.temp["workspace"]["details"] = {
-            "exam_title": exam_title, "subject_code": subject_code, "subject_name": subject_name,
-            "date_of_exam": date_of_exam, "total_marks": 0, "time": None
+            "exam_title": exam_title.upper(), "subject_code": subject_code.upper(), "subject_name": subject_name.upper(),
+            "date_of_exam": date_of_exam.upper(), "total_marks": 0, "time": None
         }
         self.title_entry.delete(0, len(exam_title))
         self.title_entry.insert(0, exam_title.upper())
@@ -726,7 +817,7 @@ class App(ctk.CTk):
         self.add_question_btn = ctk.CTkButton(
             self.workspace_button_bottom_frame,
             text="Add Question",
-            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add.png")), size=(30, 30)),
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add.png")), size=(20, 20)),
             fg_color="#8B4513",
             hover_color="#6A2E1F",
             text_color="#F5F5DC",
@@ -738,7 +829,7 @@ class App(ctk.CTk):
         self.add_yes_no_btn = ctk.CTkButton(
             self.workspace_button_bottom_frame,
             text="Add Yes/No",
-            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add.png")), size=(30, 30)),
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add.png")), size=(20, 20)),
             fg_color="#8B4513",
             hover_color="#6A2E1F",
             text_color="#F5F5DC",
@@ -750,7 +841,7 @@ class App(ctk.CTk):
         self.tag_btn = ctk.CTkButton(
             self.workspace_button_bottom_frame,
             text="Add Tag",
-            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\tags.png")), size=(30, 30)),
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\tags.png")), size=(20, 20)),
             fg_color="#8B4513",
             hover_color="#6A2E1F",
             text_color="#F5F5DC",
@@ -758,6 +849,25 @@ class App(ctk.CTk):
             command=lambda: self.addTag()
         )
         self.tag_btn.pack(padx=10, pady=10, side="right")
+
+    def saving_new_paper_process(self):
+        questions = self.collect_data()
+        if not questions:
+            return
+
+        features = {
+            "enable-negative-markings": self.allow_negative_marking_chb.get(),
+            "enable-time-limit": self.enable_time_limit_chb.get(),
+            "enable-shuffling": self.shuffle_questions_chb.get(),
+            "grading-system": self.grading_options.get(),
+            "difficulty-level": self.difficulty_level.get()
+        }
+
+        paper = {"authentication": None, "headers": self.temp["workspace"]["details"], "features": features, "questions": questions}
+
+        filename = self.temp["workspace"]["details"]["exam_title"] + self.temp["workspace"]["details"]["subject_code"]
+        service = EncryptionService(paper, get_resource_path(f"data\\{filename}.bin.enc", True), "Dragon@Ocean72")
+        service.encryptData()
 
     def addQuestion(self):
         self.count += 1
@@ -1048,6 +1158,75 @@ class App(ctk.CTk):
             self.workspace_button_bottom_frame.pack_forget()
             self.workspace_button_bottom_frame.pack(padx=20, pady=20, expand=True, fill="both")
 
+    @staticmethod
+    def validate_marks(marks: str):
+        if marks.isdigit():
+            return True
+        else:
+            return False
+
+    def collect_data(self):
+        if self.temp["workspace"] == {}:
+            self.showMessageBox()
+            play_sound("error")
+            self.message_title.configure(
+                image=ctk.CTkImage(
+                    light_image=Image.open(get_resource_path("assets\\symbols\\triangle-warning.png")), size=(20, 20)
+                ), text="Submission Needed!", text_color="#FFFFFF", compound="right", padx=10, pady=10,
+                fg_color="#D32F2F"
+            )
+            self.message_desc.configure(
+                text="To proceed, please ensure every field is filled out accurately. All fields are mandatory for successful submission.")
+            return
+        formatted_questions = {}
+        for qn, details in self.questions.items():
+            question_text = details["question"].get("1.0", "end-1c").strip()
+            marks = details["marks"].get().strip()
+            is_valid_marks = self.validate_marks(marks)
+            if not is_valid_marks:
+                messagebox.showerror("Invalid Marks",
+                                     f"Question {qn}: Please enter a valid numeric value for marks. Ensure it is not empty and contains only numbers.")
+                return
+            question_type = details["type"]
+            tag = details["tag"].get().strip()
+            selected_option = None
+
+            if question_type == "question":
+                options = {key: entry.get().strip() for key, entry in details["option_entries"].items()}
+                for option, selected in details["checkbox_states"].items():
+                    if selected:
+                        selected_option = option
+
+                if selected_option is None:
+                    messagebox.showerror("No Answer Selected",
+                                         "Please select the correct answer for the question before proceeding.")
+                    return
+                formatted_questions[qn] = {
+                    "type": question_type,
+                    "question": question_text,
+                    "marks": marks,
+                    "options": options,
+                    "answer": selected_option,
+                    "tag": tag
+                }
+            elif question_type == "yes_no":
+                for option, selected in details["checkbox_states"].items():
+                    if selected:
+                        selected_option = option
+                if selected_option is None:
+                    messagebox.showerror("No Answer Selected",
+                                         "Please select the correct answer for the question before proceeding.")
+                    return
+                formatted_questions[qn] = {
+                    "type": question_type,
+                    "question": question_text,
+                    "marks": marks,
+                    "answer": selected_option,
+                    "tag": tag
+                }
+        ic(formatted_questions)
+        return formatted_questions
+
     def create_symbols_frame(self):
 
         # Math Symbols
@@ -1197,7 +1376,6 @@ class App(ctk.CTk):
         self.create_button_frame(self.symbols_frame, physics_buttons)
 
     def create_button_frame(self, parent_frame, buttons_list):
-        """ Helper function """
         button_count = 0
         for text, symbol in buttons_list:
             if button_count % 12 == 0:
@@ -1416,7 +1594,10 @@ class App(ctk.CTk):
 
 
 if __name__ == '__main__':
-    themeManager = ThemeManager()
-    pygame.mixer.init()
-    ic(themeManager.theme)
-    App().run()
+    # themeManager = ThemeManager()
+    # pygame.mixer.init()
+    # ic(themeManager.theme)
+    # App().run()
+    service = EncryptionService(data=None, filepath=get_resource_path("data\\DDCET S2201234341601.bin.enc"), password="Dragon@Ocean72")
+    service.decryptData()
+    ic(service.data)

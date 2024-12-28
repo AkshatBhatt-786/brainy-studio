@@ -7,6 +7,7 @@ import json
 import base64
 import pickle
 import time
+import webbrowser
 import customtkinter as ctk
 from tkinter import messagebox
 from datetime import datetime
@@ -95,6 +96,40 @@ class EncryptionService:
 
 # utils methods
 
+class AnimatedLabel(ctk.CTkLabel):
+    def __init__(self, parent, texts, delay=100, erase_delay=1000, *args, **kwargs):
+        super().__init__(parent, *args, **kwargs)
+        self.texts = texts
+        self.delay = delay
+        self.erase_delay = erase_delay
+        self.current_text_index = 0
+        self.current_char_index = 0
+        self.typing = True
+        self.animate_text()
+
+    def animate_text(self):
+        current_text = self.texts[self.current_text_index]
+
+        if self.typing:
+            if self.current_char_index < len(current_text):
+                self.current_char_index += 1
+                self.configure(text=current_text[:self.current_char_index])
+                self.after(self.delay, self.animate_text)
+            else:
+                self.typing = False
+                self.after(self.erase_delay, self.animate_text)
+
+        else:
+            if self.current_char_index > 0:
+                self.current_char_index -= 1
+                self.configure(text=current_text[:self.current_char_index])
+                self.after(self.delay, self.animate_text)
+            else:
+                # Finished erasing, move to the next text and start typing again
+                self.typing = True
+                self.current_text_index = (self.current_text_index + 1) % len(self.texts)
+                self.after(self.delay, self.animate_text)
+
 
 def get_resource_path(resource_path: str, force_get: bool = False):
     try:
@@ -163,6 +198,183 @@ class ThemeManager:
 
     def loadComponentStyle(self, component_name):
         return get_value(component_name, self.theme, {})
+
+
+class LinkFrame:
+    def __init__(self, master):
+        self.master = master
+        self.master.configure(fg_color="#ffffff")
+
+        # Create the main frame for the links section
+        self.link_frame = ctk.CTkFrame(self.master, fg_color="#F5F5DC", height=200)
+        self.link_frame.pack(padx=10, pady=10, side="bottom", fill="x")
+        self.link_frame.pack_propagate(False)
+
+        self.transparent_frame = ctk.CTkFrame(self.link_frame, fg_color="transparent")
+        self.transparent_frame.pack(padx=10, pady=10, anchor="center")
+
+        self.title_label = ctk.CTkLabel(
+            self.transparent_frame,
+            text="Connect with Me",
+            text_color="#4A232A",
+            font=("Arial", 16, "bold")
+        )
+        self.title_label.pack(padx=10, pady=10, anchor="center")
+
+        self.github_button = ctk.CTkButton(
+            self.transparent_frame,
+            text="Visit My GitHub",
+            text_color="#ffffff",
+            fg_color="#333333",
+            hover_color="#D4A373",
+            font=("Arial", 14, "bold"),
+            width=200,
+            height=42,
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\github.png")), size=(30, 30)),
+            command=self.open_github
+        )
+        self.github_button.pack(pady=20, padx=10, side="left", anchor="center")
+
+        self.email_button = ctk.CTkButton(
+            self.transparent_frame,
+            text="Send an Email",
+            text_color="#ffffff",
+            fg_color="#0066CC",
+            hover_color="#0057A3",
+            font=("Arial", 14, "bold"),
+            width=200,
+            height=42,
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\gmail.png")),
+                               size=(30, 30)),
+            command=self.send_email
+        )
+        self.email_button.pack(pady=20, padx=10, side="left", anchor="center")
+
+        self.linkedin_button = ctk.CTkButton(
+            self.transparent_frame,
+            text="Connect on LinkedIn",
+            text_color="#ffffff",
+            fg_color="#0077B5",
+            hover_color="#005582",
+            font=("Arial", 14, "bold"),
+            width=200,
+            height=42,
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\linkedin.png")), size=(30, 30)),
+            command=self.open_linkedin
+        )
+        self.linkedin_button.pack(pady=20, padx=10, side="left", anchor="center")
+
+    @staticmethod
+    def open_github():
+        webbrowser.open("https://github.com/AkshatBhatt-786")
+
+    @staticmethod
+    def open_linkedin():
+        webbrowser.open("https://linkedin.com/in/akshat-bhatt-60a78a276")
+
+    @staticmethod
+    def send_email():
+        email_address = "akshatbhatt0786@gmail.com"
+        webbrowser.open(f"mailto:{email_address}")
+
+
+class DeveloperPage(ctk.CTkFrame):
+
+    def __init__(self, master, **kwargs):
+        super().__init__(master=master, **kwargs)
+        self.configure(fg_color="#ffffff")
+        self.master = master
+
+        self.header_frame = ctk.CTkFrame(
+            self.master, fg_color="#F5F5DC", height=150
+        )
+        self.header_frame.pack(anchor="center", fill="x")
+
+        self.header_frame.pack_propagate(False)
+
+        self.title_label = ctk.CTkLabel(
+            self.header_frame,
+            text="About The Developer",
+            text_color="#4A232A",
+            font=("Arial", 24, "bold"),
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\python.png")), size=(30, 30)),
+            padx=20,
+            compound="right"
+        )
+        self.title_label.pack(padx=10, pady=10, side="left")
+
+        self.separator = ctk.CTkFrame(
+            self.header_frame,
+            fg_color="#CD7F32",
+            width=2, height=2)
+        self.separator.pack(fill="y", padx=20, side="left")
+
+        self.animation_label = AnimatedLabel(
+            self.header_frame, ["AKSHAT BHATT", "CONNECT WITH ME ON GITHUB & LINKEDIN", "BUILT WITH THE POWER OF PYTHON", "STAY UPDATED WITH THE LATEST FEATURES", "THANK YOU FOR UTILIZING THIS TOOL!"], delay=100,
+            text_color="#333333",
+            font=ctk.CTkFont(family="Arial", weight="bold", size=28)
+        )
+        self.animation_label.pack(padx=20, pady=10, side="left")
+
+        logo = ctk.CTkLabel(
+            self.header_frame,
+            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\images\\logo.png")), size=(80, 80)),
+            text="BRAINY STUDIO", text_color="#333333", compound="top",
+            font=ctk.CTkFont(family="Arial", size=18, weight="bold")
+        )
+        logo.pack(padx=10, anchor="center", side="right")
+
+        self.content_frame = ctk.CTkFrame(
+            self.master, fg_color="#D2B48C", height=400, corner_radius=0
+        )
+        self.content_frame.pack(anchor="center", fill="x")
+        self.content_frame.pack_propagate(False)
+
+        self.heading = ctk.CTkLabel(
+            self.content_frame,
+            text="The Vision Behind This Software",
+            text_color="#4A232A",
+            font=("Arial", 18, "bold")
+        )
+        self.heading.pack(padx=10, pady=10, anchor="center")
+
+        self.description_text = ctk.CTkTextbox(
+            self.content_frame,
+            wrap="word",
+            fg_color="#F5F5DC",
+            text_color="#333333",
+            font=("Calibri", 16, "bold"),
+            border_color="#B87333",
+            border_width=2,
+            height=400
+        )
+        self.description_text.pack(padx=20, pady=10, anchor="w", fill="both")
+
+        self.description_text.insert(
+            "1.0",  # Start inserting at the beginning of the TextBox
+            (
+                "As a final-year Diploma IT student at SIR BPTI College, "
+                "under Gujarat Technological University (GTU), I encountered a pivotal moment "
+                "when GTU introduced the Diploma to Degree Common Entrance Test (DDCET)—a crucial exam "
+                "for students aspiring to continue their education. This sparked an idea during a late-night "
+                "brainstorming session:\n\n"
+                "'What if there was a seamless way to empower both students and teachers with advanced tools for online examinations?'\n\n"
+                "Driven by this thought, I developed two innovative solutions:\n\n"
+                "1. Cloud Exam Software – A platform for students to take online exams effortlessly, including MCQs, True/False, and more.\n"
+                "2. Brainy Studio Software – A professional-grade tool designed for teachers and organizations to easily create, manage, and publish exam papers.\n\n"
+                "With these tools, educators can upload their exam papers to a secure cloud server, making them accessible to students and other authorized users through unique access codes and passwords.\n\n"
+                "My mission was clear:\n"
+                "- To simplify the exam process for educators.\n"
+                "- To empower students with easy-to-use, reliable tools.\n"
+                "- To promote innovation in education through technology.\n\n"
+                "These solutions are not just products; they represent a vision to streamline the examination process, foster a culture of digital readiness, "
+                "and make education accessible and efficient for everyone."
+            )
+        )
+        self.description_text.configure(state="disabled")
+
+
+        self.link_frame = LinkFrame(self.master)
 
 
 class TagDialog(ctk.CTkToplevel):
@@ -312,6 +524,14 @@ class App(ctk.CTk):
                                        size=(25, 25)), width=20, height=20, command=lambda: self.display_content("create-exam"))
                 self.create_paper_btn.grid(row=1, column=0, pady=20, padx=5, sticky="nsew")
 
+                self.info_btn = ctk.CTkButton(
+                    self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
+                    hover_color="#A8DADC", corner_radius=18, text="",
+                    image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\info.png")),
+                                       size=(25, 25)), width=20, height=20,
+                    command=lambda: self.display_content("info-page"))
+                self.info_btn.grid(row=2, column=0, pady=20, padx=5, sticky="nsew")
+
     def showMessageBox(self):
         if self.message_box is None:
             self.message_box = ctk.CTkFrame(
@@ -389,11 +609,18 @@ class App(ctk.CTk):
             self.show_api_configurations()
         if content_type == "create-exam":
             self.show_create_exam_view()
+        if content_type == "info-page":
+            self.show_info_page()
+
+    def show_info_page(self):
+        if self.frame:
+            frame = DeveloperPage(master=self.frame, height=800)
+            frame.pack(padx=25, pady=10, anchor="center", fill="both")
+
+
 
     def show_create_exam_view(self):
         self.create_paper_theme = themeManager.loadComponentStyle("theme.create-paper")
-
-        self.create_paper_btn.configure(state="disabled", fg_color=get_value("background", self.create_paper_theme, "#C8C8A9"))
 
         self.header_frame = ctk.CTkFrame(self.frame, fg_color=get_value("header.background", self.create_paper_theme, "#F5F5DC"), corner_radius=0)
         self.header_frame.pack(padx=25, pady=10, anchor="center", fill="x")

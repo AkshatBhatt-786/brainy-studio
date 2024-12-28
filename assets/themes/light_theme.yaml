@@ -19,3 +19,59 @@ theme:
       background: "#FDEDEC"
       border_color: "#FDEDEC"
       on_hover: "#FDEDEC"
+  create-paper:
+    background: "#C8C8A9"
+    checkbox:
+      background: "#F5F5DC"
+      border_color: "#CD7F32"
+      checkmark_color: "#556B2F"
+      text_color: "#333333"
+      hover_color: "#DAA520"
+    combobox:
+      background: "#F5DEB3"
+      text_color: "#4A232A"
+      btn_color: "#D4A373"
+      btn_hover_color: "#8B4513"
+      dropdown_fg: "#DEB887"
+      dropdown_text: "#4A232A"
+      dropdown_hover: "#D4A373"
+      border_color: "#B87333"
+    radio:
+      background: "#F5DEB3"
+      text_color: "#4A232A"
+      border_color: "#B87333"
+      hover_color: "#D4A373"
+    button:
+      background: "#8B4513"
+      hover_color: "#6A2E1F"
+      text_color: "#F5F5DC"
+    header:
+      background: "#F5F5DC"
+      text_primary: "#4A232A"
+      symbol_frame:
+        background: "#C8C8A9"
+        scrollbar_btn_color: "#6A5D4D"
+        scrollbar_btn_hover_color: "#4A232A"
+      marking_frame:
+        background: "#D2B48C"
+      separator:
+        background: "#CD7F32"
+      action_btn_frame:
+        background: "#D2B48C"
+      action_btn_frame2:
+        background: "#D2B48C"
+    workspace:
+      entry:
+        background: "#F5F5DC"
+        text_color: "#333333"
+      text_primary: "#333333"
+      text_secondary: "#4A232A"
+      background: "#F5F5DC"
+      border_color: "#333333"
+      detail_frame:
+        background: "#F5F5DC"
+        border_color: "#B87333"
+      subject_frame:
+        background: "#F5F5DC"
+      subject_frame2:
+        background: "#F5F5DC"

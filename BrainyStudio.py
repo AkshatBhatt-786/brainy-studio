@@ -21,7 +21,7 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 
 
-ic.configureOutput(prefix="debug", includeContext=True, contextAbsPath=True)
+ic.configureOutput(prefix="DEBUG :", includeContext=True, contextAbsPath=True)
 
 # Services
 
@@ -391,97 +391,110 @@ class App(ctk.CTk):
             self.show_create_exam_view()
 
     def show_create_exam_view(self):
+        self.create_paper_theme = themeManager.loadComponentStyle("theme.create-paper")
 
-        self.create_paper_btn.configure(state="disabled", fg_color="#C8C8A9")
+        self.create_paper_btn.configure(state="disabled", fg_color=get_value("background", self.create_paper_theme, "#C8C8A9"))
 
-        self.header_frame = ctk.CTkFrame(self.frame, fg_color="#F5F5DC", corner_radius=0)
+        self.header_frame = ctk.CTkFrame(self.frame, fg_color=get_value("header.background", self.create_paper_theme, "#F5F5DC"), corner_radius=0)
         self.header_frame.pack(padx=25, pady=10, anchor="center", fill="x")
 
         self.symbols_frame = ctk.CTkScrollableFrame(
-            self.header_frame, fg_color="#C8C8A9", corner_radius=0, width=600,
-            scrollbar_fg_color="#C8C8A9", scrollbar_button_color="#6A5D4D", scrollbar_button_hover_color="#4A232A"
+            self.header_frame, fg_color=get_value("header.symbol_frame.background", self.create_paper_theme, "#C8C8A9"),
+            corner_radius=0, width=600,
+            scrollbar_fg_color=get_value("header.symbol_frame.background", self.create_paper_theme, "#C8C8A9"),
+            scrollbar_button_color=get_value("header.symbol_frame.scrollbar_btn_color", self.create_paper_theme, "#6A5D4D"),
+            scrollbar_button_hover_color=get_value("header.symbol_frame.scrollbar_btn_hover_color", self.create_paper_theme, "#4A232A")
         )
         self.symbols_frame.pack(side="left")
 
         self.create_symbols_frame()
 
-        self.marking_frame = ctk.CTkFrame(self.header_frame, fg_color="#D2B48C", corner_radius=0, width=200)
+        self.marking_frame = ctk.CTkFrame(
+            self.header_frame,
+            fg_color=get_value("header.marking_frame.background", self.create_paper_theme, "#D2B48C"),
+            corner_radius=0, width=200
+        )
         self.marking_frame.pack(fill="y", side="left")
         self.marking_frame.pack_propagate(False)
 
         self.marking_label = ctk.CTkLabel(
             self.marking_frame,
             text="Marking Options",
-            text_color="#4A232A",
+            text_color=get_value("header.text_primary", self.create_paper_theme, "#4A232A"),
             font=("Arial", 14, "bold")
         )
         self.marking_label.pack(padx=10, pady=5, anchor="w")
 
-        self.separator = ctk.CTkFrame(self.marking_frame, fg_color="#CD7F32", height=2)
+        self.separator = ctk.CTkFrame(self.marking_frame, fg_color=get_value("header.separator.background", self.create_paper_theme, "#CD7F32"), height=2)
         self.separator.pack(fill="x", pady=10)
 
         self.allow_negative_marking_chb = ctk.CTkCheckBox(
             self.marking_frame,
             text="Negative Marking",
-            fg_color="#F5F5DC",
-            border_color="#CD7F32",
-            checkmark_color="#556B2F",
-            text_color="#333333",
-            hover_color="#DAA520"
+            fg_color=get_value("checkbox.background", self.create_paper_theme, "#F5F5DC"),
+            border_color=get_value("checkbox.broder_color", self.create_paper_theme, "#CD7F32"),
+            checkmark_color=get_value("checkbox.checkmark_color", self.create_paper_theme, "#556B2F"),
+            text_color=get_value("checkbox.text_color", self.create_paper_theme, "#333333"),
+            hover_color=get_value("checkbox.hover_color", self.create_paper_theme, "#DAA520")
         )
         self.allow_negative_marking_chb.pack(padx=10, pady=5, anchor="w")
 
         self.enable_time_limit_chb = ctk.CTkCheckBox(
             self.marking_frame,
             text="Enable Time Limit",
-            fg_color="#F5F5DC",
-            border_color="#CD7F32",
-            checkmark_color="#556B2F",
-            text_color="#333333",
-            hover_color="#DAA520"
+            fg_color=get_value("checkbox.background", self.create_paper_theme, "#F5F5DC"),
+            border_color=get_value("checkbox.broder_color", self.create_paper_theme, "#CD7F32"),
+            checkmark_color=get_value("checkbox.checkmark_color", self.create_paper_theme, "#556B2F"),
+            text_color=get_value("checkbox.text_color", self.create_paper_theme, "#333333"),
+            hover_color=get_value("checkbox.hover_color", self.create_paper_theme, "#DAA520")
         )
         self.enable_time_limit_chb.pack(padx=10, pady=5, anchor="w")
 
         self.shuffle_questions_chb = ctk.CTkCheckBox(
             self.marking_frame,
             text="Shuffle Questions",
-            fg_color="#F5F5DC",
-            border_color="#CD7F32",
-            checkmark_color="#556B2F",
-            text_color="#333333",
-            hover_color="#DAA520"
+            fg_color=get_value("checkbox.background", self.create_paper_theme, "#F5F5DC"),
+            border_color=get_value("checkbox.broder_color", self.create_paper_theme, "#CD7F32"),
+            checkmark_color=get_value("checkbox.checkmark_color", self.create_paper_theme, "#556B2F"),
+            text_color=get_value("checkbox.text_color", self.create_paper_theme, "#333333"),
+            hover_color=get_value("checkbox.hover_color", self.create_paper_theme, "#DAA520")
         )
         self.shuffle_questions_chb.pack(padx=10, pady=5, anchor="w")
 
-        self.action_btn_frame = ctk.CTkFrame(self.header_frame, fg_color="#D2B48C", corner_radius=0, width=200)
+        self.action_btn_frame = ctk.CTkFrame(self.header_frame,
+                                             fg_color=get_value("header.action_btn_frame.background", self.create_paper_theme, "#D2B48C"),
+                                             corner_radius=0, width=200)
         self.action_btn_frame.pack(fill="y", side="left")
         self.action_btn_frame.pack_propagate(False)
 
-        self.separator = ctk.CTkFrame(self.action_btn_frame, fg_color="#CD7F32", width=2, height=2)
+        self.separator = ctk.CTkFrame(self.action_btn_frame, fg_color=get_value("header.separator.background", self.create_paper_theme, "#CD7F32"), width=2, height=2)
         self.separator.pack(fill="y", padx=10, side="left")
 
         self.grading_label = ctk.CTkLabel(
             self.action_btn_frame,
             text="Grading System",
-            text_color="#4A232A",
+            text_color=get_value("header.text_primary", self.create_paper_theme, "#4A232A"),
             font=("Arial", 14, "bold")
         )
         self.grading_label.pack(padx=10, pady=5, anchor="w")
 
-        self.separator = ctk.CTkFrame(self.action_btn_frame, fg_color="#CD7F32", height=2)
+        self.separator = ctk.CTkFrame(
+            self.action_btn_frame, fg_color=get_value("header.separator.background", self.create_paper_theme, "#CD7F32"),
+            height=2
+        )
         self.separator.pack(fill="x", pady=10)
 
         self.grading_options = ctk.CTkComboBox(
             self.action_btn_frame,
             values=["Percentage", "Points-based", "Pass/Fail"],
-            fg_color="#F5DEB3",
-            text_color="#4A232A",
-            button_color="#D4A373",
-            button_hover_color="#8B4513",
-            dropdown_fg_color="#DEB887",
-            dropdown_text_color="#4A232A",
-            dropdown_hover_color="#D4A373",
-            border_color="#B87333",
+            fg_color=get_value("combobox.background", self.create_paper_theme, "#F5DEB3"),
+            text_color=get_value("combobox.text_color", self.create_paper_theme, "#4A232A"),
+            button_color=get_value("combobox.btn_color", self.create_paper_theme, "#D4A373"),
+            button_hover_color=get_value("combobox.btn_hover_color", self.create_paper_theme, "#8B4513"),
+            dropdown_fg_color=get_value("combobox.dropdown_fg", self.create_paper_theme, "#DEB887"),
+            dropdown_text_color=get_value("combobox.dropdown_text", self.create_paper_theme, "#4A232A"),
+            dropdown_hover_color=get_value("combobox.dropdown_hover", self.create_paper_theme, "#D4A373"),
+            border_color=get_value("combobox.border_color", self.create_paper_theme, "#B87333"),
             width=200
         )
         self.grading_options.set("Percentage")  # Default selection
@@ -490,7 +503,7 @@ class App(ctk.CTk):
         self.difficulty_label = ctk.CTkLabel(
             self.action_btn_frame,
             text="Difficulty Level",
-            text_color="#4A232A",
+            text_color=get_value("header.text_primary", self.create_paper_theme, "#4A232A"),
             font=("Calibri", 14, "bold")
         )
         self.difficulty_label.pack(padx=10, pady=5, anchor="w")
@@ -498,37 +511,41 @@ class App(ctk.CTk):
         self.difficulty_level = ctk.CTkComboBox(
             self.action_btn_frame,
             values=["Easy", "Medium", "Hard"],
-            fg_color="#F5DEB3",
-            text_color="#4A232A",
-            button_color="#D4A373",
-            button_hover_color="#8B4513",
-            dropdown_fg_color="#DEB887",
-            dropdown_text_color="#4A232A",
-            dropdown_hover_color="#D4A373",
-            border_color="#B87333",
+            fg_color=get_value("combobox.background", self.create_paper_theme, "#F5DEB3"),
+            text_color=get_value("combobox.text_color", self.create_paper_theme, "#4A232A"),
+            button_color=get_value("combobox.btn_color", self.create_paper_theme, "#D4A373"),
+            button_hover_color=get_value("combobox.btn_hover_color", self.create_paper_theme, "#8B4513"),
+            dropdown_fg_color=get_value("combobox.dropdown_fg", self.create_paper_theme, "#DEB887"),
+            dropdown_text_color=get_value("combobox.dropdown_text", self.create_paper_theme, "#4A232A"),
+            dropdown_hover_color=get_value("combobox.dropdown_hover", self.create_paper_theme, "#D4A373"),
+            border_color=get_value("combobox.border_color", self.create_paper_theme, "#B87333"),
             width=200
         )
         self.difficulty_level.set("Easy")
         self.difficulty_level.pack(padx=10, pady=5)
 
-        self.action_btn_frame2 = ctk.CTkFrame(self.header_frame, fg_color="#D2B48C", corner_radius=0, width=200)
+        self.action_btn_frame2 = ctk.CTkFrame(
+            self.header_frame, fg_color=get_value("header.action_btn_frame2.background", self.create_paper_theme, "#D2B48C"),
+            corner_radius=0, width=200
+        )
         self.action_btn_frame2.pack(fill="both", side="left", expand=True)
         self.action_btn_frame2.pack_propagate(False)
 
-        self.separator = ctk.CTkFrame(self.action_btn_frame2, fg_color="#CD7F32", width=2, height=2)
+        self.separator = ctk.CTkFrame(
+            self.action_btn_frame2, fg_color=get_value("header.separator.background", self.create_paper_theme, "#CD7F32"),
+            width=2, height=2)
         self.separator.pack(fill="y", padx=10, side="left")
 
         self.exam_mode_label = ctk.CTkLabel(
             self.action_btn_frame2,
             text="Exam Mode",
-            text_color="#4A232A",
+            text_color=get_value("header.text_primary", self.create_paper_theme, "#4A232A"),
             font=("Arial", 14, "bold")
         )
         self.exam_mode_label.pack(padx=10, pady=5, anchor="w")
 
-        self.separator = ctk.CTkFrame(self.action_btn_frame2, fg_color="#CD7F32", height=2)
+        self.separator = ctk.CTkFrame(self.action_btn_frame2, fg_color=get_value("header.separator.background", self.create_paper_theme, "#CD7F32"), height=2)
         self.separator.pack(fill="x", pady=10)
-
         self.exam_mode_var = ctk.StringVar(value="Exam Mode")
 
         self.practice_mode_rb = ctk.CTkRadioButton(
@@ -536,10 +553,10 @@ class App(ctk.CTk):
             text="Practice Mode",
             variable=self.exam_mode_var,
             value="Practice Mode",
-            text_color="#4A232A",
-            fg_color="#F5DEB3",
-            border_color="#B87333",
-            hover_color="#D4A373",
+            text_color=get_value("radio.text_color", self.create_paper_theme, "#4A232A"),
+            fg_color=get_value("radio.background", self.create_paper_theme, "#F5DEB3"),
+            border_color=get_value("radio.border_color", self.create_paper_theme, "#B87333"),
+            hover_color=get_value("radio.hover_color", self.create_paper_theme, "#D4A373")
         )
         self.practice_mode_rb.pack(padx=10, pady=5, anchor="w")
 
@@ -548,10 +565,10 @@ class App(ctk.CTk):
             text="Exam Mode",
             variable=self.exam_mode_var,
             value="Exam Mode",
-            text_color="#4A232A",
-            fg_color="#F5DEB3",
-            border_color="#B87333",
-            hover_color="#D4A373",
+            text_color=get_value("radio.text_color", self.create_paper_theme, "#4A232A"),
+            fg_color=get_value("radio.background", self.create_paper_theme, "#F5DEB3"),
+            border_color=get_value("radio.border_color", self.create_paper_theme, "#B87333"),
+            hover_color=get_value("radio.hover_color", self.create_paper_theme, "#D4A373")
         )
         self.exam_mode_rb.pack(padx=10, pady=5, anchor="w")
 
@@ -559,9 +576,9 @@ class App(ctk.CTk):
             self.action_btn_frame2,
             text="SAVE",
             image=ctk.CTkImage(Image.open(get_resource_path("assets\\symbols\\diskette.png")), size=(30, 30)),
-            fg_color="#8B4513",
-            hover_color="#6A2E1F",
-            text_color="#F5F5DC",
+            fg_color=get_value("button.background", self.create_paper_theme, "#8B4513"),
+            hover_color=get_value("button.hover_color", self.create_paper_theme, "#6A2E1F"),
+            text_color=get_value("button.text_color", self.create_paper_theme, "#F5F5DC"),
             compound="left",
             width=200,
             height=50,
@@ -570,9 +587,12 @@ class App(ctk.CTk):
         self.submit_button.pack(padx=10, pady=10)
 
         self.workspace_frame = ctk.CTkScrollableFrame(
-            self.frame, fg_color="#F5F5DC", border_color="#333333", border_width=0, corner_radius=10,
-            scrollbar_fg_color="#F5F5DC", scrollbar_button_color="#F5F5DC",
-            scrollbar_button_hover_color="#F5F5DC"
+            self.frame, fg_color=get_value("workspace.background", self.create_paper_theme, "#F5F5DC")
+            , border_color=get_value("workspace.border", self.create_paper_theme, "#333333"),
+            border_width=0, corner_radius=10,
+            scrollbar_fg_color=get_value("workspace.background", self.create_paper_theme, "#F5F5DC"),
+            scrollbar_button_color=get_value("workspace.background", self.create_paper_theme, "#F5F5DC"),
+            scrollbar_button_hover_color=get_value("workspace.background", self.create_paper_theme, "#F5F5DC")
         )
         self.workspace_frame.pack(padx=25, pady=10, anchor="center", fill="both", expand=True)
 
@@ -585,8 +605,8 @@ class App(ctk.CTk):
                 messagebox.askyesno("Save Data", "Do you want to save the last changes you made ?")
             
             self.detail_frame = ctk.CTkFrame(
-                self.workspace_frame, border_color="#B87333", border_width=2,
-                fg_color="#F5F5DC", corner_radius=0, width=200, height=400
+                self.workspace_frame, border_color=get_value("workspace.detail_frame.border_color", self.create_paper_theme, "#B87333"), border_width=2,
+                fg_color=get_value("workspace.detail_frame.background", self.create_paper_theme, "#F5F5DC"), corner_radius=0, width=200, height=400
             )
             self.detail_frame.pack(padx=10, pady=10, fill="x", anchor="center")
             self.detail_frame.pack_propagate(False)
@@ -595,20 +615,20 @@ class App(ctk.CTk):
                 self.detail_frame, placeholder_text="Exam Title",
                 height=60, font=ctk.CTkFont(family="Arial", size=32, weight="bold"),
                 border_color="#F5F5DC", justify="center",
-                fg_color="#F5F5DC",
-                text_color="#333333"
+                fg_color=get_value("workspace.detail_frame.background", self.create_paper_theme, "#F5F5DC"),
+                text_color=get_value("workspace.text_primary", self.create_paper_theme, "#333333")
             )
             self.title_entry.pack(padx=10, pady=10, anchor="center", fill="x")
 
             self.subject_frame = ctk.CTkFrame(
-                self.detail_frame, fg_color="#F5F5DC", corner_radius=0, width=200, height=400
+                self.detail_frame, fg_color=get_value("workspace.subject_frame.background", self.create_paper_theme, "#F5F5DC"), corner_radius=0, width=200, height=400
             )
             self.subject_frame.pack(padx=10, pady=10, fill="x", anchor="center")
 
             self.subject_code_label = ctk.CTkLabel(
                 self.subject_frame,
                 text="Subject Code: ",
-                text_color="#4A232A",
+                text_color=get_value("workspace.text_primary", self.create_paper_theme, "#333333"),
                 font=("Arial", 14, "bold")
             )
             self.subject_code_label.pack(pady=5, side="left")
@@ -618,8 +638,8 @@ class App(ctk.CTk):
                 height=40, font=ctk.CTkFont(family="Arial", size=16, weight="bold"),
                 border_color="#B87333",
                 border_width=2,
-                fg_color="#F5F5DC",
-                text_color="#333333", width=200
+                fg_color=get_value("workspace.entry.background", self.create_paper_theme, "#F5F5DC"),
+                text_color=get_value("workspace.entry.text_color", self.create_paper_theme, "#333333"), width=200
             )
             self.subject_code.pack(padx=5, pady=10, side="left")
 
@@ -628,28 +648,30 @@ class App(ctk.CTk):
                 height=40, font=ctk.CTkFont(family="Arial", size=16, weight="bold"),
                 border_color="#B87333",
                 border_width=2,
-                fg_color="#F5F5DC",
-                text_color="#333333", width=200
+                fg_color=get_value("workspace.entry.background", self.create_paper_theme, "#F5F5DC"),
+                text_color=get_value("workspace.entry.text_color", self.create_paper_theme, "#333333"),
+                width=200
             )
             self.exam_date.pack(padx=10, pady=10, side="right")
 
             self.exam_date_label = ctk.CTkLabel(
                 self.subject_frame,
                 text="Date: ",
-                text_color="#4A232A",
+                text_color=get_value("workspace.text_secondary", self.create_paper_theme, "#4A232A"),
                 font=("Arial", 14, "bold")
             )
             self.exam_date_label.pack(pady=5, side="right")
 
             self.subject_frame2 = ctk.CTkFrame(
-                self.detail_frame, fg_color="#F5F5DC", corner_radius=0, width=200, height=400
+                self.detail_frame, fg_color=get_value("workspace.subject_frame2.background", self.create_paper_theme, "#F5F5DC"),
+                corner_radius=0, width=200, height=400
             )
             self.subject_frame2.pack(padx=10, pady=10, fill="x", anchor="center")
 
             self.subject_name_label = ctk.CTkLabel(
                 self.subject_frame2,
                 text="Subject Name: ",
-                text_color="#4A232A",
+                text_color=get_value("workspace.text_secondary", self.create_paper_theme, "#4A232A"),
                 font=("Arial", 14, "bold")
             )
             self.subject_name_label.pack(pady=5, side="left")
@@ -660,7 +682,8 @@ class App(ctk.CTk):
                 border_color="#B87333",
                 border_width=2,
                 fg_color="#F5F5DC",
-                text_color="#333333", width=600
+                text_color=get_value("workspace.text_primary", self.create_paper_theme, "#333333"),
+                width=600
             )
             self.subject_name.pack(pady=10, side="left")
 
@@ -672,7 +695,7 @@ class App(ctk.CTk):
             self.time_label = ctk.CTkLabel(
                 self.timings_marks_frame,
                 text="Time: ",
-                text_color="#4A232A",
+                text_color=get_value("workspace.text_secondary", self.create_paper_theme, "#4A232A"),
                 font=("Arial", 14, "bold")
             )
             self.time_label.pack(pady=5, side="left")
@@ -680,8 +703,10 @@ class App(ctk.CTk):
             self.total_marks = ctk.CTkEntry(
                 self.timings_marks_frame, placeholder_text="",
                 height=40, font=ctk.CTkFont(family="Arial", size=16, weight="bold"),
-                fg_color="#F5F5DC", border_color="#F5F5DC", border_width=2,
-                text_color="#333333", width=200,
+                fg_color=get_value("workspace.entry.background", self.create_paper_theme, "#F5F5DC"),
+                text_color=get_value("workspace.entry.text_color", self.create_paper_theme, "#333333"),
+                border_color="#F5F5DC", border_width=2,
+                width=200,
                 state="disabled"
             )
             self.total_marks.pack(padx=10, pady=10, side="right")
@@ -689,7 +714,7 @@ class App(ctk.CTk):
             self.total_marks_label = ctk.CTkLabel(
                 self.timings_marks_frame,
                 text="Total Marks: ",
-                text_color="#4A232A",
+                text_color=get_value("workspace.text_secondary", self.create_paper_theme, "#4A232A"),
                 font=("Arial", 14, "bold")
             )
             self.total_marks_label.pack(pady=5, side="right")
@@ -702,7 +727,7 @@ class App(ctk.CTk):
             self.instruction_label = ctk.CTkLabel(
                 self.instructions_frame,
                 text="Instructions: ",
-                text_color="#4A232A",
+                text_color=get_value("workspace.text_secondary", self.create_paper_theme, "#4A232A"),
                 font=("Arial", 14, "bold")
             )
             self.instruction_label.pack(pady=5, side="left")
@@ -710,22 +735,24 @@ class App(ctk.CTk):
             self.instruction_option = ctk.CTkComboBox(
                 self.instructions_frame,
                 values=["Default", "Custom"],
-                fg_color="#F5DEB3",
-                text_color="#4A232A",
-                button_color="#D4A373",
-                button_hover_color="#8B4513",
-                dropdown_fg_color="#DEB887",
-                dropdown_text_color="#4A232A",
-                dropdown_hover_color="#D4A373", border_color="#B87333", width=200
+                fg_color=get_value("combobox.background", self.create_paper_theme, "#F5DEB3"),
+                text_color=get_value("combobox.text_color", self.create_paper_theme, "#4A232A"),
+                button_color=get_value("combobox.btn_color", self.create_paper_theme, "#D4A373"),
+                button_hover_color=get_value("combobox.btn_hover_color", self.create_paper_theme, "#8B4513"),
+                dropdown_fg_color=get_value("combobox.dropdown_fg", self.create_paper_theme, "#DEB887"),
+                dropdown_text_color=get_value("combobox.dropdown_text", self.create_paper_theme, "#4A232A"),
+                dropdown_hover_color=get_value("combobox.dropdown_hover", self.create_paper_theme, "#D4A373"),
+                border_color=get_value("combobox.border_color", self.create_paper_theme, "#B87333"),
+                width=200
             )
             self.instruction_option.pack(pady=10, side="left")
 
             self.submit_paper_details_btn = ctk.CTkButton(
                 self.workspace_frame,
                 text="Submit Details",
-                fg_color="#8B4513",
-                hover_color="#6A2E1F",
-                text_color="#F5F5DC",
+                fg_color=get_value("button.background", self.create_paper_theme, "#8B4513"),
+                hover_color=get_value("button.hover_color", self.create_paper_theme, "#6A2E1F"),
+                text_color=get_value("button.text_color", self.create_paper_theme, "#F5F5DC"),
                 width=200, height=42,
                 command=lambda: self.authenticate_paper_details()
             )
@@ -860,7 +887,8 @@ class App(ctk.CTk):
             "enable-time-limit": self.enable_time_limit_chb.get(),
             "enable-shuffling": self.shuffle_questions_chb.get(),
             "grading-system": self.grading_options.get(),
-            "difficulty-level": self.difficulty_level.get()
+            "difficulty-level": self.difficulty_level.get(),
+            "exam-mode": self.exam_mode_var.get()
         }
 
         paper = {"authentication": None, "headers": self.temp["workspace"]["details"], "features": features, "questions": questions}
@@ -1594,10 +1622,7 @@ class App(ctk.CTk):
 
 
 if __name__ == '__main__':
-    # themeManager = ThemeManager()
-    # pygame.mixer.init()
-    # ic(themeManager.theme)
-    # App().run()
-    service = EncryptionService(data=None, filepath=get_resource_path("data\\DDCET S2201234341601.bin.enc"), password="Dragon@Ocean72")
-    service.decryptData()
-    ic(service.data)
+    themeManager = ThemeManager()
+    pygame.mixer.init()
+    ic(themeManager.theme)
+    App().run()

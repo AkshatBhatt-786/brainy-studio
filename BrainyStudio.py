@@ -9,7 +9,7 @@ import pickle
 import time
 import webbrowser
 import customtkinter as ctk
-from tkinter import messagebox
+from tkinter import messagebox, filedialog
 from datetime import datetime
 from PIL import Image
 from typing import Tuple
@@ -116,6 +116,7 @@ class AnimatedLabel(ctk.CTkLabel):
                 self.configure(text=current_text[:self.current_char_index])
                 self.after(self.delay, self.animate_text)
             else:
+                time.sleep(1)
                 self.typing = False
                 self.after(self.erase_delay, self.animate_text)
 
@@ -524,13 +525,20 @@ class App(ctk.CTk):
                                        size=(25, 25)), width=20, height=20, command=lambda: self.display_content("create-exam"))
                 self.create_paper_btn.grid(row=1, column=0, pady=20, padx=5, sticky="nsew")
 
+                self.edit_paper_btn = ctk.CTkButton(
+                    self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
+                    hover_color="#A8DADC", corner_radius=18, text="",
+                    image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\edit.png")),
+                                       size=(25, 25)), width=20, height=20, command=lambda: self.display_content("edit-paper"))
+                self.edit_paper_btn.grid(row=2, column=0, pady=20, padx=5, sticky="nsew")
+
                 self.info_btn = ctk.CTkButton(
                     self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
                     hover_color="#A8DADC", corner_radius=18, text="",
                     image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\info.png")),
                                        size=(25, 25)), width=20, height=20,
                     command=lambda: self.display_content("info-page"))
-                self.info_btn.grid(row=2, column=0, pady=20, padx=5, sticky="nsew")
+                self.info_btn.grid(row=3, column=0, pady=20, padx=5, sticky="nsew")
 
     def showMessageBox(self):
         if self.message_box is None:
@@ -611,13 +619,13 @@ class App(ctk.CTk):
             self.show_create_exam_view()
         if content_type == "info-page":
             self.show_info_page()
+        if content_type == "edit-paper":
+            self.edit_paper()
 
     def show_info_page(self):
         if self.frame:
             frame = DeveloperPage(master=self.frame, height=800)
             frame.pack(padx=25, pady=10, anchor="center", fill="both")
-
-
 
     def show_create_exam_view(self):
         self.create_paper_theme = themeManager.loadComponentStyle("theme.create-paper")
@@ -724,7 +732,7 @@ class App(ctk.CTk):
             border_color=get_value("combobox.border_color", self.create_paper_theme, "#B87333"),
             width=200
         )
-        self.grading_options.set("Percentage")  # Default selection
+        self.grading_options.set("Percentage")
         self.grading_options.pack(padx=10, pady=5)
 
         self.difficulty_label = ctk.CTkLabel(
@@ -827,10 +835,10 @@ class App(ctk.CTk):
 
     def create_digital_workspace(self):
         if self.workspace_frame:
-
-            if self.temp["workspace"] != {}:
-                messagebox.askyesno("Save Data", "Do you want to save the last changes you made ?")
-            
+            self.temp["workspace"] = {}
+            self.tags = ["None"]
+            self.questions = {}
+            self.count = 0
             self.detail_frame = ctk.CTkFrame(
                 self.workspace_frame, border_color=get_value("workspace.detail_frame.border_color", self.create_paper_theme, "#B87333"), border_width=2,
                 fg_color=get_value("workspace.detail_frame.background", self.create_paper_theme, "#F5F5DC"), corner_radius=0, width=200, height=400
@@ -1106,6 +1114,9 @@ class App(ctk.CTk):
 
     def saving_new_paper_process(self):
         questions = self.collect_data()
+        if questions == {}:
+            messagebox.showerror("Minimum Question Required", "You need to add at least 1 question before saving the paper. Please create a question and try again.")
+            return
         if not questions:
             return
 
@@ -1118,11 +1129,33 @@ class App(ctk.CTk):
             "exam-mode": self.exam_mode_var.get()
         }
 
-        paper = {"authentication": None, "headers": self.temp["workspace"]["details"], "features": features, "questions": questions}
+        total_marks = 0
+        count = 0
+        questions_list = {}
+        for i in questions.keys():
+            count += 1
+            questions_list[count] = questions.get(i)
+            total_marks += int(questions.get(i).get("marks"))
+            ic(total_marks)
+            ic(int(questions.get(i).get("marks")))
 
-        filename = self.temp["workspace"]["details"]["exam_title"] + self.temp["workspace"]["details"]["subject_code"]
+        self.temp["workspace"]["details"]["total_marks"] = total_marks
+
+        paper = {"authentication": None, "headers": self.temp["workspace"]["details"], "features": features, "questions": questions_list}
+
+        filename: str = self.temp["workspace"]["details"]["exam_title"].replace(" ", "_") + "_" + self.temp["workspace"]["details"]["date_of_exam"].replace(" ", "_")
         service = EncryptionService(paper, get_resource_path(f"data\\{filename}.bin.enc", True), "Dragon@Ocean72")
         service.encryptData()
+        messagebox.showinfo("File Saved", "Your test paper has been successfully saved! It is now available for access and distribution\nYou can access it anytime from your saved documents.")
+        play_sound("success")
+        self.showMessageBox()
+        self.message_title.configure(text="File Saved", image=ctk.CTkImage(
+            light_image=(Image.open(get_resource_path("assets\\symbols\\check-circle.png"))),
+            size=(20, 20)
+        ), text_color="#FFFFFF", compound="right", padx=10, pady=10, fg_color="#4CAF50")
+        self.message_desc.configure(text=f"File successfully saved at data\\{filename}.bin.enc")
+        self.display_content("edit-paper")
+        return
 
     def addQuestion(self):
         self.count += 1
@@ -1150,13 +1183,13 @@ class App(ctk.CTk):
             values=self.tags,
             width=210,
             font=ctk.CTkFont(family="Calibri", size=18),
-            fg_color="#F5F5DC",  # Matching vintage beige
-            text_color="#4B0030",  # Deep vintage purple
-            button_color="#8B4513",  # Saddle brown button
-            button_hover_color="#A0522D",  # Sienna hover color
-            dropdown_fg_color="#FAF0E6",  # Linen dropdown background
-            dropdown_text_color="#4B0030",  # Consistent text color
-            dropdown_hover_color="#D2B48C",  # Tan hover effect
+            fg_color="#F5F5DC",
+            text_color="#4B0030",
+            button_color="#8B4513",
+            button_hover_color="#A0522D",
+            dropdown_fg_color="#FAF0E6",
+            dropdown_text_color="#4B0030",
+            dropdown_hover_color="#D2B48C",
             dropdown_font=ctk.CTkFont(family="Calibri", size=18)
         )
         tag_entry.pack(padx=0, pady=10, side="left")
@@ -1413,6 +1446,82 @@ class App(ctk.CTk):
             self.workspace_button_bottom_frame.pack_forget()
             self.workspace_button_bottom_frame.pack(padx=20, pady=20, expand=True, fill="both")
 
+    def edit_paper(self):
+        self.count = 0
+        self.questions = {}
+        self.temp["workspace"] = {}
+        self.tags = ["None"]
+        filepath = filedialog.askopenfilename(initialdir=get_resource_path("data"), defaultextension=".bin.enc", filetypes=[("brainy-studio", ".bin.enc")])
+        if not filepath:
+            return
+        service = EncryptionService(data=None, filepath=filepath, password="Dragon@Ocean72")
+        service.decryptData()
+        self.show_create_exam_view()
+        features = service.data.get("features")
+        if features.get("enable-negative-markings"):
+            self.allow_negative_marking_chb.select()
+        if features.get("enable-time-limit"):
+            self.enable_time_limit_chb.select()
+        if features.get("enable-shuffling"):
+            self.shuffle_questions_chb.select()
+        self.grading_options.set(features.get("grading-system"))
+        self.difficulty_level.set(features.get("difficulty-level"))
+        self.exam_mode_var.set(features.get("exam-mode"))
+        exam_title = service.data["headers"]["exam_title"]
+        subject_code = service.data["headers"]["subject_code"]
+        subject_name = service.data["headers"]["subject_name"]
+        exam_date = service.data["headers"]["date_of_exam"]
+        questions = service.data["questions"]
+        total_marks = service.data["headers"]["total_marks"]
+        tags: set[str] = set()
+        self.total_marks.configure(state="normal")
+        self.total_marks.insert(0, str(total_marks))
+        self.total_marks.configure(state="disabled")
+        self.title_entry.delete(0, len(exam_title))
+        self.title_entry.insert(0, exam_title.upper())
+        self.subject_code.delete(0, len(subject_code))
+        self.subject_code.insert(0, subject_code.upper())
+        self.subject_name.delete(0, len(subject_name))
+        self.subject_name.insert(0, subject_name.upper())
+        self.title_entry.configure(state="disabled")
+        self.subject_code.configure(state="disabled", border_color="#F5F5DC")
+        self.exam_date.insert(0, exam_date)
+        self.exam_date.configure(state="disabled", border_color="#F5F5DC")
+        self.subject_name.configure(state="disabled", border_color="#F5F5DC")
+        self.instruction_option.configure(state="disabled")
+        self.submit_paper_details_btn.pack_forget()
+        self.submit_paper_details_btn.destroy()
+        self.authenticate_paper_details()
+
+        for i in range(len(questions)):
+            self.addQuestion()
+
+        for j in self.questions.keys():
+            question = self.questions.get(j)
+            marks = question.get("marks").insert(0, questions[j].get("marks"))
+            question.get("tag").set(questions[j].get("tag"))
+            tags.add(questions[j].get("tag"))
+            text_box: ctk.CTkTextbox = question.get("question").insert("1.0", questions[j].get("question"))
+            checkbox_states = question.get("checkbox_states")
+            checkbox_states[questions[j].get("answer")] = True
+            checkboxes = self.questions[j]["checkboxes"]
+            for option, checkbox in checkboxes.items():
+                if checkbox_states[option]:
+                    checkbox.select()
+                else:
+                    checkbox.deselect()
+            entries = question.get("option_entries")
+            for entry in entries.keys():
+                options = entries.get(entry)
+                options.insert(0, questions.get(j).get("options").get(entry))
+
+        for tag in tags:
+            self.tags.append(tag)
+        for question in self.questions.keys():
+            data = self.questions.get(question)
+            combo = data.get("tag")
+            combo.configure(values=self.tags)
+
     @staticmethod
     def validate_marks(marks: str):
         if marks.isdigit():
@@ -1479,7 +1588,6 @@ class App(ctk.CTk):
                     "answer": selected_option,
                     "tag": tag
                 }
-        ic(formatted_questions)
         return formatted_questions
 
     def create_symbols_frame(self):

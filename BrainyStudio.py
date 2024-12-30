@@ -24,6 +24,7 @@ from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.lib.utils import ImageReader
+from textwrap import wrap
 
 
 ic.configureOutput(prefix="DEBUG :", includeContext=True, contextAbsPath=True)
@@ -180,15 +181,29 @@ class GeneratePDF:
         question_start_y = y_position - 20
 
         for i, (question_text, marks, correct_option, options_list) in enumerate(self.questions):
-            if question_start_y < 100:
+            wrapped_question = wrap(question_text, width=85)
+            question_height = len(wrapped_question) * 15
+            options_height = len(options_list) * 25
+            total_question_height = question_height + options_height + 40
+
+            if question_start_y - total_question_height < 100:
                 self.add_footer(pdf, page_num, width)
                 pdf.showPage()
                 page_num += 1
                 question_start_y = height - 120
 
+            max_text_width = width - 100
+            wrapped_question = wrap(question_text, width=85)
+
+
             pdf.setFont("Helvetica-Bold", 12)
             pdf.setFillColor(colors.HexColor("#2E3B55"))
-            pdf.drawString(50, question_start_y, f"Q{i + 1}. {question_text}")
+            y_offset = 0
+            for line in wrapped_question:
+                pdf.drawString(50, question_start_y - y_offset, line)
+                y_offset += 15
+            question_start_y -= y_offset
+
             pdf.drawRightString(width - 50, question_start_y, f"Marks: {marks}")
 
             pdf.setFont("Helvetica", 11)

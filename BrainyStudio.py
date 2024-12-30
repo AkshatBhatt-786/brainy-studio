@@ -414,11 +414,97 @@ class LinkFrame:
         webbrowser.open(f"mailto:{email_address}")
 
 
-class ExportPage(ctk.CTkFrame):
-    def __init__(self, master, **kwargs):
+class EditPaperPage(ctk.CTkFrame):
+    def __init__(self, master, parent, **kwargs):
         super().__init__(master=master, **kwargs)
         self.configure(fg_color="#ffffff")
         self.master = master
+        self.parent = parent
+        self.header_frame = None
+        self.content_frame = None
+        self.build()
+
+    def build(self):
+        if self.header_frame is None:
+            self.header_frame = ctk.CTkFrame(
+                self.master, fg_color="#F5F5DC", height=150
+            )
+            self.header_frame.pack(anchor="center", fill="x")
+            self.header_frame.pack_propagate(False)
+
+            self.title_label = ctk.CTkLabel(
+                self.header_frame,
+                text="Edit Paper",
+                text_color="#4A232A",
+                font=("Arial", 24, "bold"),
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\edit.png")), size=(30, 30)),
+                padx=20,
+                compound="right"
+            )
+            self.title_label.pack(padx=10, pady=10, side="left")
+
+            self.separator = ctk.CTkFrame(
+                self.header_frame,
+                fg_color="#CD7F32",
+                width=2, height=2)
+            self.separator.pack(fill="y", padx=20, side="left")
+
+            self.animation_label = AnimatedLabel(
+                self.header_frame,
+                texts=["Revise Your Paper, Powered by Brainy Studio", "Edit Your Brainy Studio Paper"], delay=100,
+                text_color="#333333",
+                font=ctk.CTkFont(family="Arial", weight="bold", size=28)
+            )
+            self.animation_label.pack(padx=20, pady=10, side="left")
+
+            logo = ctk.CTkLabel(
+                self.header_frame,
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\images\\logo.png")), size=(80, 80)),
+                text="BRAINY STUDIO", text_color="#333333", compound="top",
+                font=ctk.CTkFont(family="Arial", size=18, weight="bold")
+            )
+            logo.pack(padx=10, anchor="center", side="right")
+
+        if self.content_frame is None:
+            self.content_frame = ctk.CTkFrame(
+                self.master, fg_color="#D2B48C", height=400, corner_radius=0
+            )
+            self.content_frame.pack(anchor="center", fill="x")
+            self.content_frame.pack_propagate(False)
+
+            self.heading = ctk.CTkLabel(
+                self.content_frame,
+                text="Select A File",
+                text_color="#4A232A",
+                font=("Arial", 18, "bold")
+            )
+            self.heading.pack(padx=10, pady=10, anchor="center")
+
+            self.export_frame = ctk.CTkFrame(self.content_frame, width=800, height=500, fg_color="#FFFFFF")
+            self.export_frame.pack(padx=10, pady=10, anchor="center")
+            self.export_frame.pack_propagate(False)
+
+            self.export_btn = ctk.CTkButton(
+                self.export_frame,
+                text="Choose File",
+                text_color="#ffffff",
+                fg_color="#0066CC",
+                hover_color="#0057A3",
+                font=("Arial", 14, "bold"),
+                width=200,
+                height=52,
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\selection.png")), size=(30, 30)), command=lambda: self.parent.edit_paper())
+            self.export_btn.place(relx=0.5, rely=0.5, anchor="center")
+            self.link_frame = LinkFrame(self.master)
+
+
+
+class ExportPage(ctk.CTkFrame):
+    def __init__(self, master, parent, **kwargs):
+        super().__init__(master=master, **kwargs)
+        self.configure(fg_color="#ffffff")
+        self.master = master
+        self.parent = parent
         self.header_frame = None
         self.content_frame = None
         self.build()
@@ -617,9 +703,8 @@ class ExportPage(ctk.CTkFrame):
         pdf_file = get_resource_path(f"data\\{headers["exam_title"]}_{subject_details["subject_date"]}.pdf", force_get=True)
         messagebox.showinfo("PDF Generated", f"PDF generated successfully at {pdf_file}")
         webbrowser.open(pdf_file)
-
-        self.option_frame.destroy()
-        self.build()
+        self.parent.display_content("export-page")
+        return
 
 
 class DeveloperPage(ctk.CTkFrame):
@@ -1058,12 +1143,12 @@ class App(ctk.CTk):
         if content_type == "info-page":
             self.show_info_page()
         if content_type == "edit-paper":
-            self.edit_paper()
+            self.redirect_to_edit_page()
         if content_type == "export-page":
             self.redirect_to_export_page()
 
     def redirect_to_export_page(self):
-        self.export_page = ExportPage(master=self.frame)
+        self.export_page = ExportPage(master=self.frame, parent=self)
         self.export_page.place(relx=0.5, rely=0.5, anchor="center")
 
     def show_info_page(self):
@@ -1890,7 +1975,13 @@ class App(ctk.CTk):
             self.workspace_button_bottom_frame.pack_forget()
             self.workspace_button_bottom_frame.pack(padx=20, pady=20, expand=True, fill="both")
 
+    def redirect_to_edit_page(self):
+        self.edit_page = EditPaperPage(master=self.frame, parent=self)
+        self.edit_page.pack(padx=10, pady=10, anchor="center")
+
     def edit_paper(self):
+        for widget in self.frame.winfo_children():
+            widget.destroy()
         self.count = 0
         self.questions = {}
         self.temp["workspace"] = {}

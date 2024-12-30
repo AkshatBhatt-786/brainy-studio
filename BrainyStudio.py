@@ -7,15 +7,21 @@ import json
 import base64
 import pickle
 import time
+import bcrypt
 import webbrowser
 import customtkinter as ctk
+import dropbox
 from tkinter import messagebox, filedialog
 from datetime import datetime
 from PIL import Image
+from math import floor
+from random import random
 from typing import Tuple
 from icecream import ic
 from threading import Thread
 from socket import create_connection
+from dropbox.files import WriteMode
+from dropbox.exceptions import ApiError, AuthError, BadInputError, InternalServerError
 from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -28,6 +34,32 @@ from textwrap import wrap
 
 
 ic.configureOutput(prefix="DEBUG :", includeContext=True, contextAbsPath=True)
+
+
+class DropboxBackend:
+
+    def __init__(self, access_token: str, app_key: str, app_secret: str, root_path: str):
+        self.dbx = dropbox.Dropbox(access_token, app_key=app_key, app_secret=app_secret)
+        self.root_path = root_path
+
+    def upload_file(self, local_path: str, dropbox_path: str):
+        try:
+            with open(local_path, "rb") as f:
+                self.dbx.files_upload(f.read(), dropbox_path, mode=WriteMode("overwrite"))
+                return True
+        except FileNotFoundError:
+            messagebox.showerror("Error", f"Local file '{local_path}' not found.")
+            return False
+        except ApiError as e:
+            if e.error.is_path() and e.error.get_path():
+                messagebox.showerror("Error", f"Conflict error: File '{dropbox_path}' already exists.")
+                return False
+            else:
+                messagebox.showerror("Error", f"API error during upload")
+                return False
+        except Exception as e:
+            messagebox.showerror("Something went wrong", f"An unexpected error occurred during file upload")
+            return False
 
 
 class EncryptionService:
@@ -95,6 +127,16 @@ class EncryptionService:
         key = base64.urlsafe_b64encode(kdf.derive(self.password.encode()))
         ic('Derived encryption key successfully.')
         return key, base64.urlsafe_b64encode(salt).decode()
+
+    @staticmethod
+    def encrypt_password(password: str) -> str:
+        salt = bcrypt.gensalt()
+        hashed_password = bcrypt.hashpw(password.encode('utf-8'), salt)
+        return hashed_password.decode('utf-8')
+
+    @staticmethod
+    def verify_password(password: str, hashed_password: str) -> bool:
+        return bcrypt.checkpw(password.encode('utf-8'), hashed_password.encode('utf-8'))
 
 
 class GeneratePDF:
@@ -414,6 +456,332 @@ class LinkFrame:
         webbrowser.open(f"mailto:{email_address}")
 
 
+class CloudRegisterPage(ctk.CTkFrame):
+    def __init__(self, master, parent, **kwargs):
+        super().__init__(master=master, **kwargs)
+        self.configure(fg_color="#ffffff")
+        self.master = master
+        self.parent = parent
+        self.header_frame = None
+        self.content_frame = None
+        self.filepath = self.parent.temp["export"]
+        self.data = {}
+        self.build()
+
+    def build(self):
+        if self.header_frame is None:
+            self.header_frame = ctk.CTkFrame(
+                self.master, fg_color="#F5F5DC", height=150
+            )
+            self.header_frame.pack(anchor="center", fill="x")
+            self.header_frame.pack_propagate(False)
+
+            self.title_label = ctk.CTkLabel(
+                self.header_frame,
+                text="Publish on CloudExam",
+                text_color="#4A232A",
+                font=("Arial", 24, "bold"),
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\cloud-code.png")),
+                                   size=(30, 30)),
+                padx=20,
+                compound="right"
+            )
+            self.title_label.pack(padx=10, pady=10, side="left")
+
+            self.separator = ctk.CTkFrame(
+                self.header_frame,
+                fg_color="#CD7F32",
+                width=2, height=2)
+            self.separator.pack(fill="y", padx=20, side="left")
+
+            self.animation_label = AnimatedLabel(
+                self.header_frame,
+                texts=["BrainyStudio ~ Powered by Cloud Exam", "Publish Your Brainy Studio Paper on Cloud Exam Platform"], delay=100,
+                text_color="#333333",
+                font=ctk.CTkFont(family="Arial", weight="bold", size=28)
+            )
+            self.animation_label.pack(padx=20, pady=10, side="left")
+
+            logo = ctk.CTkLabel(
+                self.header_frame,
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\images\\logo.png")),
+                                   size=(80, 80)),
+                text="BRAINY STUDIO", text_color="#333333", compound="top",
+                font=ctk.CTkFont(family="Arial", size=18, weight="bold")
+            )
+            logo.pack(padx=10, anchor="center", side="right")
+
+        if self.content_frame is None:
+            self.content_frame = ctk.CTkFrame(
+                self.master, fg_color="#D2B48C", height=400, corner_radius=0,
+            )
+            self.content_frame.pack(anchor="center", fill="x")
+            self.content_frame.pack_propagate(False)
+
+            encryption_service = EncryptionService(data=None, filepath=self.filepath, password="Dragon@Ocean72")
+            encryption_service.decryptData()
+            data = encryption_service.data
+            headers = data["headers"]
+            auth = data["authentication"]
+            features = data["features"]
+            questions = data["questions"]
+            self.data = {"auth": auth, "headers": headers, "features": features, "questions": questions}
+
+            if auth:
+                auth_frame = ctk.CTkFrame(self.content_frame, width=400, height=400, fg_color="transparent")
+                auth_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+                auth_title = ctk.CTkLabel(
+                    auth_frame,
+                    text="Secure Access Required",
+                    text_color="#1A1A1A",
+                    compound="top",
+                    font=ctk.CTkFont(family="Helvetica", size=16, weight="bold")
+                )
+                auth_title.pack(pady=10, padx=10, anchor="center")
+
+                password_label = ctk.CTkLabel(
+                    auth_frame,
+                    text="Password: ",
+                    text_color="#1A1A1A",
+                    compound="top",
+                    font=ctk.CTkFont(family="Helvetica", size=16, weight="bold")
+                )
+                password_label.pack(padx=10, pady=10, side="left", anchor="center")
+
+                password_entry = ctk.CTkEntry(
+                    auth_frame,
+                    fg_color="#F5F5DC",
+                    text_color="#333333",
+                    font=("Calibri", 14, "bold"),
+                    border_color="#B87333",
+                    border_width=2,
+                    width=300,
+                    height=32,
+                    show="●"
+                )
+                password_entry.pack(padx=10, pady=10, side="left", anchor="center")
+
+                authorise_btn = ctk.CTkButton(
+                    auth_frame,
+                    text="Authorize \u2192",
+                    text_color="#ffffff",
+                    fg_color="#0066CC",
+                    hover_color="#0057A3",
+                    font=("Arial", 14, "bold"),
+                    width=200,
+                    height=52,
+                    corner_radius=10,
+                    command=lambda: self.authenticate_user()
+                )
+                authorise_btn.pack(padx=10, pady=10, anchor="center")
+
+            form_title = ctk.CTkLabel(
+                self.content_frame,
+                text="Cloud Exam File Registry Form",
+                text_color="#1A1A1A",
+                compound="top",
+                font=ctk.CTkFont(family="Helvetica", size=16, weight="bold")
+            )
+            form_title.pack(pady=10, padx=10, anchor="center")
+
+            ctk.CTkLabel(
+                self.content_frame,
+                text=f"{headers["exam_title"]}",
+                text_color="#1A1A1A",
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\file.png")), size=(30, 30)),
+                compound="left",
+                font=ctk.CTkFont(family="Helvetica", size=16, weight="bold")
+            ).pack(padx=10, pady=10, anchor="center")
+
+            time_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+            time_frame.pack(padx=10, pady=10, anchor="center")
+
+            time_label = ctk.CTkLabel(
+                time_frame,
+                text="Time (Minutes): ",
+                text_color="#1A1A1A",
+                compound="top",
+                font=ctk.CTkFont(family="Helvetica", size=16, weight="bold")
+            )
+            time_label.pack(padx=10, pady=10, anchor="center", side="left")
+
+            self.time_entry = ctk.CTkEntry(
+                time_frame,
+                fg_color="#F5F5DC",
+                text_color="#333333",
+                font=("Calibri", 14, "bold"),
+                border_color="#B87333",
+                border_width=2,
+                width=60,
+                height=32,
+                justify="center"
+            )
+            self.time_entry.pack(padx=10, pady=10, anchor="center", side="left")
+
+            passcode_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+            passcode_frame.pack(padx=10, pady=10, anchor="center")
+
+            passcode_label = ctk.CTkLabel(
+                passcode_frame,
+                text="PASSCODE: ",
+                text_color="#1A1A1A",
+                compound="top",
+                font=ctk.CTkFont(family="Helvetica", size=16, weight="bold")
+            )
+            passcode_label.pack(padx=10, pady=10, anchor="center", side="left")
+
+            self.passcode_entry = ctk.CTkEntry(
+                passcode_frame,
+                fg_color="#F5F5DC",
+                text_color="#333333",
+                font=("Calibri", 14, "bold"),
+                border_color="#B87333",
+                border_width=2,
+                width=320,
+                height=32,
+                placeholder_text="Create Strong Passcode",
+                show="●"
+            )
+            self.passcode_entry.pack(padx=10, pady=10, anchor="center", side="left")
+
+            passcode_warning_label = ctk.CTkLabel(
+                passcode_frame,
+                text="Do not share your passcode.",
+                text_color="red",
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\triangle-warning.png")), size=(20, 20)),
+                compound="left",
+                font=ctk.CTkFont(family="Arial", size=12, weight="bold"), padx=10
+            )
+            passcode_warning_label.pack(padx=10, pady=(0, 10), anchor="w", side="left")
+
+            access_code_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+            access_code_frame.pack(padx=10, pady=10, anchor="center")
+
+            access_code_label = ctk.CTkLabel(
+                access_code_frame,
+                text="ACCESS KEY: ",
+                text_color="#1A1A1A",
+                compound="top",
+                font=ctk.CTkFont(family="Helvetica", size=16, weight="bold")
+            )
+            access_code_label.pack(padx=10, pady=10, anchor="center", side="left")
+
+            self.access_code_entry = ctk.CTkEntry(
+                access_code_frame,
+                fg_color="#F5F5DC",
+                text_color="#333333",
+                font=("Calibri", 14, "bold"),
+                border_color="#B87333",
+                border_width=2,
+                width=320,
+                height=32,
+                placeholder_text="Create Access Key",
+                show="●"
+            )
+            self.access_code_entry.pack(padx=10, pady=10, anchor="center", side="left")
+
+            access_code_info_label = ctk.CTkLabel(
+                access_code_frame,
+                text="Public Key: Shareable and visible to others.",
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\info.png")),
+                                   size=(20, 20)),
+                compound="left",
+                text_color="#4A4A4A",
+                font=ctk.CTkFont(family="Arial", size=12, weight="normal"),
+                anchor="w",
+                padx=10
+            )
+            access_code_info_label.pack(padx=10, pady=(0, 10), anchor="w", side="left")
+
+            register_btn = ctk.CTkButton(
+                self.content_frame,
+                text="PUBLISH NOW",
+                text_color="#ffffff",
+                fg_color="#0066CC",
+                hover_color="#0057A3",
+                font=("Arial", 14, "bold"),
+                width=200,
+                height=52,
+                corner_radius=10,
+                command=lambda: self.publish_on_dropbox()
+            )
+            register_btn.pack(padx=10, pady=10, anchor="center")
+
+
+        link_frame = LinkFrame(self.master)
+
+    def authenticate_user(self):
+        pass
+
+    def publish_on_dropbox(self):
+        passcode_value = self.passcode_entry.get()
+        access_code_value = self.access_code_entry.get()
+        time_entry = self.time_entry.get()
+        errors = []
+
+        if passcode_value == "" or access_code_value == "" or time_entry == "":
+            messagebox.showerror("All fields Required", "All the fields are compulsory to be filled!")
+            return
+
+        if not time_entry.isdigit():
+            return
+
+        if len(passcode_value) < 8:
+            errors.append("Passcode must be at least 8 characters long.")
+        if not any(char.isdigit() for char in passcode_value):
+            errors.append("Passcode must contain at least one digit.")
+        if not any(char.isupper() for char in passcode_value):
+            errors.append("Passcode must contain at least one uppercase letter.")
+        if not any(char.islower() for char in passcode_value):
+            errors.append("Passcode must contain at least one lowercase letter.")
+        if not any(char in "!@#$%^&*()_+[]{}|;:',.<>?/" for char in passcode_value):
+            errors.append("Passcode must contain at least one special character.")
+
+        if passcode_value == access_code_value:
+            messagebox.showerror("Auth Error", "Passcode and Access-code Code cannot be Same!")
+            return
+
+        if errors:
+            messagebox.showerror("Validation Errors", "\n".join(errors))
+            return
+
+        access_code = self.generate_access_code()
+        hashed_passcode = EncryptionService.encrypt_password(passcode_value)
+        current_timestamp = datetime.now()
+        hashed_access_code = EncryptionService.encrypt_password(access_code_value)
+        self.data["auth"] = {"access_code": access_code, "access_key": hashed_access_code, "passcode": hashed_passcode, "last-modified": current_timestamp}
+        self.data["headers"]["time"] = time_entry
+
+        encryption_service = EncryptionService(data=self.data, filepath=get_resource_path(f"data\\{access_code}.bin.enc", force_get=True), password="Dragon@Ocean87")
+        encryption_service.encryptData()
+
+
+
+        dbx_backend = DropboxBackend(self.parent.temp["config"]["access_token"], self.parent.temp["config"]["app_key"], self.parent.temp["config"]["app_secret"], "/cloud/")
+        file_upload = dbx_backend.upload_file(get_resource_path(f"data\\{access_code}.bin.enc", force_get=True),
+                                              f"/cloud/{access_code}.bin.enc")
+
+        if file_upload:
+            messagebox.showinfo(
+                "File Successfully Uploaded to Dropbox",
+                f"Your exam file has been published to Dropbox.\n\n"
+                f"ACCESS CODE (Public Key) : {access_code}\n"
+                f"ACCESS KEY  (Private Key): {access_code_value}\n\n"
+                f"⚠ Keep your passcode private and do not share it with anyone."
+            )
+
+    @staticmethod
+    def generate_access_code():
+        characters = "123456789ABCDEFGHIJKLMNPQURSTVUWXYZ"
+        access_code = ""
+
+        for i in range(6):
+            access_code += characters[floor(random() * len(characters))]
+
+        return access_code
+
+
 class EditPaperPage(ctk.CTkFrame):
     def __init__(self, master, parent, **kwargs):
         super().__init__(master=master, **kwargs)
@@ -496,7 +864,6 @@ class EditPaperPage(ctk.CTkFrame):
                 image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\selection.png")), size=(30, 30)), command=lambda: self.parent.edit_paper())
             self.export_btn.place(relx=0.5, rely=0.5, anchor="center")
             self.link_frame = LinkFrame(self.master)
-
 
 
 class ExportPage(ctk.CTkFrame):
@@ -588,8 +955,8 @@ class ExportPage(ctk.CTkFrame):
 
         self.export_btn.destroy()
 
-        self.option_frame = ctk.CTkFrame(self.export_frame, width=600, height=300, fg_color="#F5F5F5", corner_radius=10)
-        self.option_frame.pack(padx=20, pady=20, anchor="center")
+        self.option_frame = ctk.CTkFrame(self.export_frame, width=600, height=120, fg_color="#F5F5F5", corner_radius=10)
+        self.option_frame.place(relx=0.5, rely=0.5, anchor="center")
         self.option_frame.pack_propagate(False)
 
         self.filename_label = ctk.CTkEntry(
@@ -602,13 +969,15 @@ class ExportPage(ctk.CTkFrame):
             width=400,
             height=32,
         )
-        self.filename_label.pack(padx=20, pady=15, anchor="center", fill="x")
+        self.filename_label.pack(padx=20, pady=10, anchor="center", fill="x")
         self.filename_label.insert(0, f"File: {self.filepath}")
         self.filename_label.configure(state="disabled")
 
         self.export_options = ctk.CTkComboBox(
             self.option_frame,
-            values=["Export to PDF", "Publish it on CloudExam"],
+            values=["Export to PDF", "Publish it on Cloud Exam"],
+            font=ctk.CTkFont(family="Calibri", size=14),
+            dropdown_font=ctk.CTkFont(family="Calibri", size=14),
             fg_color="#F5DEB3",
             text_color="#4A232A",
             button_color="#D4A373",
@@ -617,10 +986,11 @@ class ExportPage(ctk.CTkFrame):
             dropdown_text_color="#4A232A",
             dropdown_hover_color="#D4A373",
             border_color="#B87333",
-            height=42,
-            width=400
+            height=32,
+            width=300
         )
-        self.export_options.pack(padx=20, pady=15, anchor="center", fill="x")
+        self.export_options.pack(padx=20, anchor="center", side="left")
+        self.export_options.set("Export to PDF")
 
         export_btn = ctk.CTkButton(
             self.option_frame,
@@ -632,12 +1002,22 @@ class ExportPage(ctk.CTkFrame):
             width=200,
             height=52,
             corner_radius=10,
-            command=lambda: self._generate_pdf()
+            command=lambda: self.user_export_selection()
         )
-        export_btn.pack(padx=20, pady=20, side="left", anchor="center")
+        export_btn.pack(padx=20, side="right", anchor="center")
 
-        self.export_options.set("")
+    def user_export_selection(self):
+        user = self.export_options.get()
+        if user.lower() == "export to pdf":
+            self._generate_pdf()
+        if user.lower() == "publish it on cloud exam":
+            self._publish_on_cloud_exam()
+        return
 
+    def _publish_on_cloud_exam(self):
+        self.parent.temp["export"] = self.filepath
+        self.parent.display_content("publish-content")
+        return
 
     def _generate_pdf(self):
         service = EncryptionService(data=None, filepath=self.filepath, password="Dragon@Ocean72")
@@ -701,8 +1081,8 @@ class ExportPage(ctk.CTkFrame):
         pdf_generator.generate_pdf()
 
         pdf_file = get_resource_path(f"data\\{headers["exam_title"]}_{subject_details["subject_date"]}.pdf", force_get=True)
-        messagebox.showinfo("PDF Generated", f"PDF generated successfully at {pdf_file}")
-        webbrowser.open(pdf_file)
+        if messagebox.askyesno("PDF Generated", f"The PDF has been saved at:\n\n{pdf_file}\n\nPreview it now?"):
+            webbrowser.open(pdf_file)
         self.parent.display_content("export-page")
         return
 
@@ -888,9 +1268,10 @@ class App(ctk.CTk):
         self.btn_frame = None
         # Create Exam configuration
         self.count = 0
-        self.temp = {"workspace": {}}
+        self.temp = {"workspace": {}, "export": None, "config": {}}
         self.tags = ["None"]
         self.questions = {}
+        self.loadApiConfigurations()
 
     def build(self):
         self.configure(fg_color=get_value("theme.primary", self.theme, "#E5D3FF"))
@@ -1103,6 +1484,13 @@ class App(ctk.CTk):
                 )
                 self.close_btn.pack(padx=10, pady=10, side="right")
 
+    def loadApiConfigurations(self):
+        config_file_path = get_resource_path("data\\config.json")
+        if config_file_path:
+            with open(config_file_path, "r") as f:
+                data = json.load(f)
+        self.temp["config"] = data
+
     def clearFrame(self, event=None):
         for widget in self.frame.winfo_children():
             if widget:
@@ -1146,6 +1534,12 @@ class App(ctk.CTk):
             self.redirect_to_edit_page()
         if content_type == "export-page":
             self.redirect_to_export_page()
+        if content_type == "publish-content":
+            self.redirect_to_publish_cloud_exam()
+
+    def redirect_to_publish_cloud_exam(self):
+        self.publishFrame = CloudRegisterPage(master=self.frame, parent=self)
+        self.publishFrame.place(relx=0.5, rely=0.5, anchor="center")
 
     def redirect_to_export_page(self):
         self.export_page = ExportPage(master=self.frame, parent=self)
@@ -1498,7 +1892,7 @@ class App(ctk.CTk):
 
             self.instruction_option = ctk.CTkComboBox(
                 self.instructions_frame,
-                values=["Default", "Custom"],
+                values=["Default"],
                 fg_color=get_value("combobox.background", self.create_paper_theme, "#F5DEB3"),
                 text_color=get_value("combobox.text_color", self.create_paper_theme, "#4A232A"),
                 button_color=get_value("combobox.btn_color", self.create_paper_theme, "#D4A373"),
@@ -1578,7 +1972,7 @@ class App(ctk.CTk):
         self.message_desc.configure(text="The details have been successfully validated and saved. You may make any further changes if required before finalizing.")
         self.temp["workspace"]["details"] = {
             "exam_title": exam_title.upper(), "subject_code": subject_code.upper(), "subject_name": subject_name.upper(),
-            "date_of_exam": date_of_exam.upper(), "total_marks": 0, "time": None
+            "date_of_exam": date_of_exam.upper(), "total_marks": 0, "time": None, "instructions": self.instruction_option.get()
         }
         self.title_entry.delete(0, len(exam_title))
         self.title_entry.insert(0, exam_title.upper())
@@ -1616,18 +2010,6 @@ class App(ctk.CTk):
             command=lambda: self.addQuestion()
         )
         self.add_question_btn.pack(padx=10, pady=10, side="right")
-
-        self.add_yes_no_btn = ctk.CTkButton(
-            self.workspace_button_bottom_frame,
-            text="Add Yes/No",
-            image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add.png")), size=(20, 20)),
-            fg_color="#8B4513",
-            hover_color="#6A2E1F",
-            text_color="#F5F5DC",
-            width=120, height=42,
-            command=lambda: self.addTrueFalse()
-        )
-        self.add_yes_no_btn.pack(padx=10, pady=10, side="right")
 
         self.tag_btn = ctk.CTkButton(
             self.workspace_button_bottom_frame,
@@ -1811,115 +2193,6 @@ class App(ctk.CTk):
             self.workspace_button_bottom_frame.pack_forget()
             self.workspace_button_bottom_frame.pack(padx=20, pady=20, expand=True, fill="both")
 
-    def addTrueFalse(self):
-        self.count += 1
-
-        true_false_frame = ctk.CTkFrame(
-            self.workspace_frame, corner_radius=10, height=350,
-            fg_color="#FAEBD7", border_color="#A9A9A9", border_width=2
-        )
-        true_false_frame.pack(padx=20, pady=20, anchor="center", expand=True, fill="both")
-        true_false_frame.pack_propagate(False)
-
-        info_frame = ctk.CTkFrame(
-            true_false_frame, fg_color="#F5F5DC", border_color="#8B4513"
-        )
-        info_frame.pack(padx=10, pady=10, anchor="w", fill="x")
-
-        tag_label = ctk.CTkLabel(
-            info_frame, text="Tag: ", font=ctk.CTkFont(family="Calibri", size=18), text_color="#6B8E23"
-        )
-        tag_label.pack(padx=10, pady=10, side="left")
-
-        tag_entry = ctk.CTkComboBox(
-            info_frame,
-            values=self.tags,
-            width=210,
-            font=ctk.CTkFont(family="Calibri", size=18),
-            fg_color="#F5F5DC",
-            text_color="#4B0030",
-            button_color="#8B4513",
-            button_hover_color="#A0522D",
-            dropdown_fg_color="#FAF0E6",
-            dropdown_text_color="#4B0030",
-            dropdown_hover_color="#D2B48C",
-            dropdown_font=ctk.CTkFont(family="Calibri", size=18)
-        )
-        tag_entry.pack(padx=0, pady=10, side="left")
-
-        delete_button = ctk.CTkButton(
-            info_frame, text="",
-            image=ctk.CTkImage(Image.open(get_resource_path("assets\\symbols\\delete_btn.png")), size=(20, 20)),
-            font=ctk.CTkFont(family="Calibri", size=14),
-            fg_color="#B22222",
-            hover_color="#8B0000",
-            width=40,
-            command=lambda qn=self.count: self.delete_question(qn)
-        )
-        delete_button.pack(padx=10, pady=10, side="right")
-
-        marks_entry = ctk.CTkEntry(
-            info_frame, placeholder_text="marks: ",
-            text_color="#4B0030",
-            fg_color="#F5F5DC",
-            border_color="#8B4513",
-            placeholder_text_color="#8B4513",
-            border_width=2,
-            font=ctk.CTkFont(family="Calibri", size=14, slant="italic"),
-            width=60
-        )
-        marks_entry.pack(side="right")
-
-        question_text_box = ctk.CTkTextbox(
-            true_false_frame, width=1000, height=100,
-            corner_radius=10, font=ctk.CTkFont(family="Calibri", size=20),
-            fg_color="#FAF0E6",
-            border_color="#A0522D",
-            text_color="#4B0030",
-            border_width=2
-        )
-        question_text_box.pack(padx=10, pady=10, anchor="w", fill="x")
-
-        options = ["True", "False"]
-        checkbox_states = {option: False for option in options}
-        checkboxes = {}
-        option_entries = {}
-
-        for i, option in enumerate(options, start=1):
-            option_frame = ctk.CTkFrame(
-                true_false_frame, width=950, height=50, fg_color="#FAF0E6",
-                border_color="#8B4513", border_width=2
-            )
-            option_frame.pack(padx=10, pady=5, anchor="w")
-            option_frame.grid_propagate(False)
-
-            checkbox = ctk.CTkCheckBox(
-                option_frame, text=f"{options[i - 1]}. ",
-                height=20, fg_color="#F5F5DC",
-                font=ctk.CTkFont(family="Calibri", size=18, weight="bold"),
-                hover_color="#A0522D",
-                checkmark_color="#4B0030",
-                border_color="#8B4513",
-                text_color="#4B0030",
-                corner_radius=50,
-                command=lambda opt=option, qn=self.count: self.on_checkbox_click(opt, qn)
-            )
-            checkbox.grid(row=0, column=0, padx=10, pady=10, sticky="w")
-            checkboxes[option] = checkbox
-
-        self.questions[self.count] = {
-            "frame": true_false_frame,
-            "question": question_text_box,
-            "checkbox_states": checkbox_states,
-            "checkboxes": checkboxes,
-            "tag": tag_entry,
-            "marks": marks_entry,
-            "type": "yes_no"
-        }
-
-        self.workspace_button_bottom_frame.pack_forget()
-        self.workspace_button_bottom_frame.pack(padx=20, pady=20, expand=True, fill="both")
-
     def on_checkbox_click(self, selected_option, question_number):
         checkbox_states = self.questions[question_number]["checkbox_states"]
 
@@ -1936,10 +2209,6 @@ class App(ctk.CTk):
                 checkbox.select()
             else:
                 checkbox.deselect()
-
-        question_type = self.questions[question_number]["type"]
-        if question_type == "yes_no":
-            return
 
     def addTag(self):
         dialog = TagDialog(self, title="Add a New Subject Tag", text="Please enter a unique tag name to categorize your subject. \nTags help in organizing and improving navigation.")
@@ -2105,21 +2374,6 @@ class App(ctk.CTk):
                     "question": question_text,
                     "marks": marks,
                     "options": options,
-                    "answer": selected_option,
-                    "tag": tag
-                }
-            elif question_type == "yes_no":
-                for option, selected in details["checkbox_states"].items():
-                    if selected:
-                        selected_option = option
-                if selected_option is None:
-                    messagebox.showerror("No Answer Selected",
-                                         "Please select the correct answer for the question before proceeding.")
-                    return
-                formatted_questions[qn] = {
-                    "type": question_type,
-                    "question": question_text,
-                    "marks": marks,
                     "answer": selected_option,
                     "tag": tag
                 }
@@ -2316,6 +2570,7 @@ class App(ctk.CTk):
                 access_token = data["access_token"]
                 app_key = data["app_key"]
                 app_secret = data["app_secret"]
+                self.temp["config"] = {"access-token": access_token, "app-key": app_key, "app-secret": app_secret}
             except Exception as e:
                 self.showMessageBox()
                 self.message_title.configure(

@@ -26,6 +26,7 @@ from cryptography.fernet import Fernet
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from pygments.styles.dracula import comment
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
@@ -346,6 +347,7 @@ def play_sound(sound_type: str):
     if sound_type == "success":
         pygame.mixer.music.load(get_resource_path("assets\\tunes\\success-notify.mp3"))
     pygame.mixer.music.play()
+
 
 class LinkFrame:
     def __init__(self, master):
@@ -835,6 +837,115 @@ class EditPaperPage(ctk.CTkFrame):
             self.link_frame = LinkFrame(self.master)
 
 
+class HomePage(ctk.CTkFrame):
+    def __init__(self, master, parent, **kwargs):
+        super().__init__(master=master, **kwargs)
+        self.configure(fg_color="#ffffff")
+        self.master = master
+        self.parent = parent
+        self.header_frame = None
+        self.content_frame = None
+        self.build()
+
+    def build(self):
+        if self.header_frame is None:
+            self.header_frame = ctk.CTkFrame(
+                self.master, fg_color="#F5F5DC", height=150
+            )
+            self.header_frame.pack(anchor="center", fill="x")
+            self.header_frame.pack_propagate(False)
+
+            self.title_label = ctk.CTkLabel(
+                self.header_frame,
+                text="Brainy Studio",
+                text_color="#4A232A",
+                font=("Arial", 24, "bold"),
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\images\\logo.png")), size=(80, 80)),
+                padx=20,
+                compound="right"
+            )
+            self.title_label.pack(padx=10, pady=10, side="left")
+
+            self.separator = ctk.CTkFrame(
+                self.header_frame,
+                fg_color="#CD7F32",
+                width=2, height=2)
+            self.separator.pack(fill="y", padx=20, side="left")
+
+            self.animation_label = AnimatedLabel(
+                self.header_frame,
+                texts=["Welcome to BrainyStudio", "Create Interactive Test Paper", "Powered by Cloud Exam", "Make Your Data Accessible Anytime, Anywhere", "Save and Share Instantly", "Start Exporting Now"], delay=100,
+                text_color="#333333",
+                font=ctk.CTkFont(family="Arial", weight="bold", size=28)
+            )
+            self.animation_label.pack(padx=20, pady=10, side="left")
+
+        if self.content_frame is None:
+            self.content_frame = ctk.CTkFrame(
+                self.master, fg_color="#D2B48C", height=600, corner_radius=0
+            )
+            self.content_frame.pack(anchor="center", fill="x")
+            self.content_frame.pack_propagate(False)
+            self.heading = ctk.CTkLabel(
+                self.content_frame,
+                text="Explore Brainy Studio",
+                text_color="#4A232A",
+                font=("Arial", 18, "bold")
+            )
+            self.heading.pack(padx=10, pady=20, anchor="center")
+
+            self.transparent_frame = ctk.CTkFrame(self.content_frame, fg_color="transparent")
+            self.transparent_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+            self.create_paper_btn = ctk.CTkButton(
+                self.transparent_frame,
+                text="Create Paper",
+                fg_color="#8B4513",
+                hover_color="#6A2E1F",
+                text_color="#F5F5DC",
+                font=("Arial", 18, "bold"),
+                width=180,
+                height=180,
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\add-document.png")),
+                                   size=(60, 60)),
+                compound="top",
+                command=lambda: self.parent.display_content("create-exam")
+            )
+            self.create_paper_btn.pack(pady=20, padx=10, side="left", anchor="center")
+
+            self.edit_paper_btn = ctk.CTkButton(
+                self.transparent_frame,
+                text="Edit Paper",
+                fg_color="#8B4513",
+                hover_color="#6A2E1F",
+                text_color="#F5F5DC",
+                font=("Arial", 18, "bold"),
+                width=180,
+                height=180,
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\edit.png")),
+                                   size=(60, 60)),
+                compound="top",
+                command=lambda: self.parent.display_content("edit-paper")
+            )
+            self.edit_paper_btn.pack(pady=20, padx=10, side="left", anchor="center")
+
+            self.export_btn = ctk.CTkButton(
+                self.transparent_frame,
+                text="Export Now",
+                fg_color="#8B4513",
+                hover_color="#6A2E1F",
+                text_color="#F5F5DC",
+                font=("Arial", 18, "bold"),
+                width=180,
+                height=180,
+                image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\share.png")),
+                                   size=(60, 60)),
+                compound="top",
+                command=lambda: self.parent.display_content("export-page"),
+            )
+            self.export_btn.pack(pady=20, padx=10, side="left", anchor="center")
+
+
 class ExportPage(ctk.CTkFrame):
     def __init__(self, master, parent, **kwargs):
         super().__init__(master=master, **kwargs)
@@ -1244,7 +1355,7 @@ class App(ctk.CTk):
         self.configure(fg_color="#E5D3FF")
         if self.frame is None:
             self.frame = ctk.CTkFrame(
-                self, fg_color="#B39DDB",
+                self, fg_color="#FFFFFF",
                 border_color="#7E57C2",
                 border_width=2, corner_radius=10
             )
@@ -1278,7 +1389,8 @@ class App(ctk.CTk):
                     self.name_frame, text="Dashboard  ", image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\home.png")), size=(20, 20)),
                     fg_color="#E1F5FE", text_color="#4A4A4A",
                     hover_color="#BBDEFB", corner_radius=8, height=32, width=180,
-                    font=ctk.CTkFont(family="Calibri", size=16, weight="bold")
+                    font=ctk.CTkFont(family="Calibri", size=16, weight="bold"),
+                    command=self.display_content("home-page")
                 )
                 nav_dashboard_btn.pack(padx=10, pady=10, anchor="center", side="top")
 
@@ -1304,16 +1416,6 @@ class App(ctk.CTk):
                 )
                 edit_paper_btn.pack(padx=10, pady=10, anchor="center", side="top")
 
-                delete_paper_btn = ctk.CTkButton(
-                    self.name_frame, text="Delete Paper",
-                    image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\delete.png")),
-                                       size=(20, 20)),
-                    fg_color="#E1F5FE", text_color="#4A4A4A",
-                    hover_color="#BBDEFB", corner_radius=8, height=32, width=180,
-                    font=ctk.CTkFont(family="Calibri", size=16, weight="bold")
-                )
-                delete_paper_btn.pack(padx=10, pady=10, side="top")
-
                 export_btn = ctk.CTkButton(
                     self.name_frame, text="Export          ",
                     image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\share.png")),
@@ -1325,15 +1427,6 @@ class App(ctk.CTk):
                 )
                 export_btn.pack(padx=10, pady=10, anchor="center", side="top")
 
-                ratings_btn = ctk.CTkButton(
-                    self.name_frame, text="Ratings        ",
-                    image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\rate.png")),
-                                       size=(25, 25)),
-                    fg_color="#E1F5FE", text_color="#4A4A4A",
-                    hover_color="#BBDEFB", corner_radius=8, height=32, width=180,
-                    font=ctk.CTkFont(family="Calibri", size=16, weight="bold")
-                )
-                ratings_btn.pack(padx=10, pady=10, anchor="center", side="top")
 
                 info_btn = ctk.CTkButton(
                     self.name_frame, text="About Us     ",
@@ -1365,7 +1458,7 @@ class App(ctk.CTk):
                     hover_color="#A8DADC", corner_radius=18, text="",
                     image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\home.png")),
                                        size=(20, 20)), width=20, height=20,
-                    command=lambda: self.display_content("create-exam"))
+                    command=lambda: self.display_content("home-page"))
                 self.dashboard_nav_btn.grid(row=1, column=0, pady=20, padx=5, sticky="nsew")
 
                 self.create_paper_btn = ctk.CTkButton(
@@ -1382,27 +1475,12 @@ class App(ctk.CTk):
                                        size=(20, 20)), width=20, height=20, command=lambda: self.display_content("edit-paper"))
                 self.edit_paper_btn.grid(row=3, column=0, pady=20, padx=5, sticky="nsew")
 
-                self.delete_paper_btn = ctk.CTkButton(
-                    self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
-                    hover_color="#A8DADC", corner_radius=18, text="",
-                    image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\delete.png")),
-                                       size=(20, 20)), width=20, height=20)
-                self.delete_paper_btn.grid(row=4, column=0, pady=20, padx=5, sticky="nsew")
-
                 self.export_btn = ctk.CTkButton(
                     self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
                     hover_color="#A8DADC", corner_radius=18, text="",
                     image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\share.png")),
                                        size=(20, 20)), width=20, height=20, command=lambda: self.display_content("export-page"))
                 self.export_btn.grid(row=5, column=0, pady=20, padx=5, sticky="nsew")
-
-
-                self.ratings_btn = ctk.CTkButton(
-                    self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
-                    hover_color="#A8DADC", corner_radius=18, text="",
-                    image=ctk.CTkImage(light_image=Image.open(get_resource_path("assets\\symbols\\rate.png")),
-                                       size=(20, 20)), width=20, height=20)
-                self.ratings_btn.grid(row=6, column=0, pady=20, padx=5, sticky="nsew")
 
                 self.info_btn = ctk.CTkButton(
                     self.icon_frame, fg_color="#C4E4E7", text_color="#4A4A4A",
@@ -1510,7 +1588,7 @@ class App(ctk.CTk):
 
     def redirect_to_home_page(self):
         home_page = HomePage(master=self.frame, parent=self)
-        home_page.pack(padx=10, pady=10, anchor="center")
+        home_page.place(rely=0.5, relx=0.5, anchor="center")
 
     def redirect_to_publish_cloud_exam(self):
         self.publishFrame = CloudRegisterPage(master=self.frame, parent=self)
@@ -2028,8 +2106,12 @@ class App(ctk.CTk):
 
         paper = {"authentication": None, "headers": self.temp["workspace"]["details"], "features": features, "questions": questions_list}
 
-        filename: str = self.temp["workspace"]["details"]["exam_title"].replace(" ", "_") + "_" + self.temp["workspace"]["details"]["date_of_exam"].replace(" ", "_")
-        service = EncryptionService(paper, get_resource_path(f"data\\{filename}.bin.enc", True), "Dragon@Ocean72")
+        default_filename: str = self.temp["workspace"]["details"]["exam_title"].replace(" ", "_") + "_" + self.temp["workspace"]["details"]["date_of_exam"].replace(" ", "_") + ".bin.enc"
+        file_path = filedialog.asksaveasfilename(
+            initialfile=default_filename,
+            filetypes=[("Brainy Studio Encrypted File", ".bin.enc")]
+        )
+        service = EncryptionService(paper, file_path, "Dragon@Ocean72")
         service.encryptData()
         messagebox.showinfo("File Saved", "Your test paper has been successfully saved! It is now available for access and distribution\nYou can access it anytime from your saved documents.")
         play_sound("success")
@@ -2038,8 +2120,8 @@ class App(ctk.CTk):
             light_image=(Image.open(get_resource_path("assets\\symbols\\check-circle.png"))),
             size=(20, 20)
         ), text_color="#FFFFFF", compound="right", padx=10, pady=10, fg_color="#4CAF50")
-        self.message_desc.configure(text=f"File successfully saved at data\\{filename}.bin.enc")
-        self.display_content("edit-paper")
+        self.message_desc.configure(text=f"File successfully saved at {file_path}")
+        self.display_content("home-page")
         return
 
     def addQuestion(self):

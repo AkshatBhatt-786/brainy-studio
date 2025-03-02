@@ -74,6 +74,7 @@ class BrainyStudioApp(ctk.CTk):
         self.halfway_pos = ((self.start_pos + self.end_pos) / 2) - 0.06
         self.configure(fg_color=Colors.BACKGROUND)
         self.create_paper = None
+        self.edit_page = None
         self.attributes("-topmost", True)
         self.main_content = ctk.CTkFrame(
             master=self,
@@ -136,7 +137,7 @@ class BrainyStudioApp(ctk.CTk):
         self.action_grid.columnconfigure((0, 1, 2), weight=1, uniform="a")
 
         self._create_action_card("Create Paper", "assets\\images\\create-paper.png", 0, lambda: self.redirect_to_create_paper_page())
-        self._create_action_card("Edit Paper", "assets\\images\\edit.png", 1, None)
+        self._create_action_card("Edit Paper", "assets\\images\\edit.png", 1, lambda: self.redirect("edit-page"))
         self._create_action_card("Export Paper", "assets\\images\\export.png", 2, None)
 
         self.recent_projects_frame = ctk.CTkFrame(self.main_content, fg_color=Colors.SECONDARY, corner_radius=10)
@@ -304,7 +305,7 @@ class BrainyStudioApp(ctk.CTk):
                     text_color="white",
                     hover_color=Colors.ACCENT,
                     corner_radius=10,
-                    command=None
+                    command=lambda: self.redirect_to_edit_paper_page(file_path)
                 )
                 file_button.pack(fill="x", padx=10, pady=5)
 
@@ -367,11 +368,28 @@ class BrainyStudioApp(ctk.CTk):
             self.sidebar.place(relx=self.pos, rely=0.14, relwidth=self.width, relheight=0.8)
             self.in_start_pos = self.pos == self.start_pos  
 
+    
+    def redirect_to_edit_paper_page(self, filepath=None):
+        if filepath:
+            # Destroy current content and load editor with file
+            for widget in self.main_content.winfo_children():
+                widget.destroy()
+            
+            # Create editor with file path
+            self.edit_page = CreatePaper(self, edit_mode=True, file_path=filepath)
+            self.edit_page.pack(padx=10, pady=10, fill="both", expand=True)
+        else:
+            # Handle new edit creation
+            self.redirect("edit-paper")
+
+    
     def redirect(self, page_name):
         for widget in self.main_content.winfo_children():
             widget.destroy()
 
         if page_name == "create-paper":
+            if self.edit_page:
+                self.edit_page.pack_forget()
             self.create_paper = CreatePaper(self)
             self.create_paper.pack(padx=10, pady=10, anchor="center")
 
@@ -379,6 +397,12 @@ class BrainyStudioApp(ctk.CTk):
             if self.create_paper is not None:
                 self.create_paper.pack_forget()
             self.build()
+
+        if page_name == "edit-page":
+            if self.create_paper:
+                self.create_paper.pack_forget()
+            self.edit_page = CreatePaper(self, edit_mode=True)
+            self.edit_page.pack(padx=10, pady=10, anchor="center")
 
 
 if __name__ == "__main__":

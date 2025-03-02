@@ -1,5 +1,5 @@
 import customtkinter as ctk
-from ui_components import Colors, PrimaryButton, SearchButton, ErrorButton
+from ui_components import Colors, PrimaryButton, SearchButton, ErrorButton, GlassEffectFrame
 from PIL import Image
 from utils import getPath
 

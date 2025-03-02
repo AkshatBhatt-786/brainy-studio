@@ -11,29 +11,26 @@ import datetime
 from users import UserManager, AuthView
 from create_paper import CreatePaper
 
+
 class WorkspaceEventHandler(FileSystemEventHandler):
     def __init__(self, app, observer):
         self.app = app
         self.observer = observer
 
     def on_created(self, event):
-        print(f"[APP] File Created: {event.src_path}")
         if not event.is_directory:
             self.app.after(0, self.app.load_recent_projects)
 
     def on_deleted(self, event):
-        print(f"[APP] File Deleted: {event.src_path}")
         workspace_path = self.app.user_manager.user[3]
 
         if not os.path.exists(workspace_path):
             self.observer.stop()
-            print("[APP] Workspace deleted, stopping observer.")
         else:
             self.app.after(0, self.app.load_recent_projects)
 
     def on_modified(self, event):
-        print(f"[APP] File Modified: {event.src_path}")
-
+        pass
 
 
 def watch_workspace(app, user):
@@ -76,6 +73,7 @@ class BrainyStudioApp(ctk.CTk):
         self.width = abs(self.start_pos - self.end_pos)
         self.halfway_pos = ((self.start_pos + self.end_pos) / 2) - 0.06
         self.configure(fg_color=Colors.BACKGROUND)
+        self.create_paper = None
         self.attributes("-topmost", True)
         self.main_content = ctk.CTkFrame(
             master=self,
@@ -378,7 +376,7 @@ class BrainyStudioApp(ctk.CTk):
             self.create_paper.pack(padx=10, pady=10, anchor="center")
 
         if page_name == "home-page":
-            if self.create_paper:
+            if self.create_paper is not None:
                 self.create_paper.pack_forget()
             self.build()
 

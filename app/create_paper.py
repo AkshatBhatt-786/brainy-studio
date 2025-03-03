@@ -334,12 +334,35 @@ class CreatePaper(ctk.CTkFrame):
 
         self.workspace = ctk.CTkScrollableFrame(self, fg_color="transparent", width=800, height=600)
         self.workspace.pack(fill="both", expand=True)
-
+        
         if self.edit_mode and self.file_path:
-            self.load_existing_paper() 
-
-        if self.edit_mode:
+            self.load_paper_from_recent_projects(self.file_path)
+        elif self.edit_mode:
             self.load_paper() 
+
+    def load_paper_from_recent_projects(self, filepath):
+        if os.path.exists(filepath):
+            pswd = PasswordDialog(self, mode="decrypt")
+            self.wait_window(pswd)
+
+            with open(filepath, "r") as fp:
+                encrypted_data = json.load(fp)
+
+            if pswd.password:
+                    decrypted_data = self._decrypt_data(encrypted_data, pswd.password)
+                    if decrypted_data:
+                        questions = json.loads(decrypted_data)
+                        self._load_questions(questions)
+                        messagebox.showinfo("Question Added", "Questions Loaded Successfully!")
+                        return
+            
+            messagebox.showerror("Incorrect Password", "The given password is incorrect!")
+            self.after(0, lambda: self.parent.redirect("home-page"))
+            return
+        
+        messagebox.showerror("File Not Found", "The file may be deleted or moved by user!")
+        self.after(0, lambda: self.parent.redirect("home-page"))
+
 
     def open_question_bank(self):
         self.parent.attributes("-topmost", False)
@@ -467,6 +490,8 @@ class CreatePaper(ctk.CTkFrame):
                     json.dump(encrypted_data, f)
 
                 self.after(0, lambda: messagebox.showinfo("Success", "Paper encrypted and saved successfully!"))
+                self.after(0, lambda: self.parent.redirect("home-page"))
+
             except Exception as error:
                 self.after(0, lambda e=error: messagebox.showerror("Error", f"Save failed:\n{str(e)}"))
 
@@ -474,8 +499,8 @@ class CreatePaper(ctk.CTkFrame):
 
     def load_paper(self):
         file_path = filedialog.askopenfilename(
-                filetypes=[("Encrypted Files", "*.enc"), ("All files", "*.*")],
-                title="Open Encrypted Question Paper")
+                    filetypes=[("Encrypted Files", "*.enc"), ("All files", "*.*")],
+                    title="Open Encrypted Question Paper")
         
         if not file_path:
             return
@@ -608,4 +633,4 @@ class CreatePaper(ctk.CTkFrame):
             self.question_frames.append(qf)
 
         self.perform_search()
-
+        

@@ -153,6 +153,16 @@ class BrainyStudioApp(ctk.CTk):
         )
         self.footer_label.pack(side="bottom", pady=10)
 
+    def redirect_to_edit_paper_page(self, filepath=None):
+        if filepath:
+            for widget in self.main_content.winfo_children():
+                widget.destroy()
+
+            self.edit_page = CreatePaper(self.main_content, parent=self, edit_mode=True, file_path=filepath)
+            self.edit_page.pack(padx=10, pady=10, fill="both", expand=True)
+        else:
+            self.redirect("edit-page")
+
     def redirect_to_create_paper_page(self):
         self.redirect("create-paper")
 
@@ -305,7 +315,7 @@ class BrainyStudioApp(ctk.CTk):
                     text_color="white",
                     hover_color=Colors.ACCENT,
                     corner_radius=10,
-                    command=lambda filepath=file_path: self.redirect_to_edit_paper_page(file_path)
+                    command=lambda f=file_path: self.redirect(page_name="edit-page", filepath=f)
                 )
                 file_button.pack(fill="x", padx=10, pady=5)
 
@@ -368,19 +378,7 @@ class BrainyStudioApp(ctk.CTk):
             self.sidebar.place(relx=self.pos, rely=0.14, relwidth=self.width, relheight=0.8)
             self.in_start_pos = self.pos == self.start_pos  
 
-    
-    def redirect_to_edit_paper_page(self, filepath=None):
-        if filepath:
-            for widget in self.main_content.winfo_children():
-                widget.destroy()
-            
-            self.edit_page = CreatePaper(self, parent=self, edit_mode=True, file_path=filepath)
-            self.edit_page.pack(padx=10, pady=10, fill="both", expand=True)
-        else:
-            # Handle new edit creation
-            self.redirect("edit-paper")
-
-    def redirect(self, page_name):
+    def redirect(self, page_name, filepath=None):
         for widget in self.main_content.winfo_children():
             widget.destroy()
 
@@ -398,7 +396,7 @@ class BrainyStudioApp(ctk.CTk):
         if page_name == "edit-page":
             if self.create_paper:
                 self.create_paper.pack_forget()
-            self.edit_page = CreatePaper(self.main_content, edit_mode=True, parent=self)
+            self.edit_page = CreatePaper(self.main_content, edit_mode=True, parent=self, file_path=filepath)
             self.edit_page.pack(padx=10, pady=10, anchor="center")
 
 

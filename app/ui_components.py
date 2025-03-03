@@ -57,7 +57,7 @@ class PrimaryButton(ctk.CTkButton):
             height=height,
             fg_color=Colors.Buttons.PRIMARY,
             hover_color=Colors.Buttons.PRIMARY_HOVER,
-            border_color="#303F9F",
+            border_color=Colors.Buttons.PRIMARY, # 303F9F
             corner_radius=12,
             text_color="white",
             border_width=2,
@@ -129,9 +129,6 @@ class CustomLabel(ctk.CTkLabel):
         self.configure(text_color=self.default_color)
 
 class SearchButton(ctk.CTkButton):
-    """
-    Search button with modern styling.
-    """
     def __init__(self, master, text, width=130, height=50, **kwargs):
         super().__init__(
             master,
@@ -139,7 +136,7 @@ class SearchButton(ctk.CTkButton):
             width=width,
             height=height,
             fg_color="#FF9800",
-            border_color="#8E44AD",
+            border_color="#FF9800",
             corner_radius=12,
             text_color="white",
             border_width=2,

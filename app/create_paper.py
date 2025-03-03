@@ -1,7 +1,9 @@
 import customtkinter as ctk
 import tkinter as tk
-from ui_components import PrimaryButton, SearchButton, ErrorButton
+from ui_components import PrimaryButton, SearchButton, ErrorButton, Colors
 from tkinter import filedialog, messagebox
+from utils import getPath, centerWindow
+from PIL import Image
 import json
 import os
 import random
@@ -18,44 +20,98 @@ class PasswordDialog(ctk.CTkToplevel):
     def __init__(self, parent, mode="encrypt"):
         super().__init__(parent)
         self.attributes("-topmost", True)
-        self.title("Enter Passcode" if mode == "encrypt" else "Verify Passcode")
-        self.geometry("300x150")
+        if mode == "encrypt":
+            title_text = "Set a 4-digit passcode to secure your question paper."
+        else:
+            title_text = "Enter the 4-digit passcode to access your question paper."
+
+        self.title("Set Passcode" if mode == "encrypt" else "Enter Passcode")
+        self.geometry(centerWindow(parent, 560, 400, self._get_window_scaling()))
         self.resizable(False, False)
+        self.configure(fg_color=Colors.BACKGROUND)
+
         self.password = None
-        
-        self.label = ctk.CTkLabel(self, text="Enter 4-digit passcode:")
-        self.label.pack(pady=10)
-        
-        self.entry = ctk.CTkEntry(self, show="•", width=150)
-        self.entry.pack()
-        self.entry.bind("<KeyRelease>", self.validate_input)
-        
-        self.confirm_btn = ctk.CTkButton(self, text="Confirm", command=self.on_confirm, state="disabled")
-        self.confirm_btn.pack(pady=10)
-        
+
+        # Main container
+        container = ctk.CTkFrame(self, fg_color="transparent")
+        container.pack(padx=20, pady=15, fill="both", expand=True)
+
+        self.logo = ctk.CTkLabel(
+                    master=container,
+                    text="Brainy Studio",
+                    image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\logo.png")), size=(80, 80)),
+                    font=("Consolas", 14, "bold"),
+                    compound="top",
+                    text_color=Colors.HIGHLIGHT
+                )
+        self.logo.pack(pady=(0, 10))
+
+        self.label = ctk.CTkLabel(container, text=title_text, 
+                                  font=("Segoe UI", 14),
+                                  text_color=Colors.Texts.HEADERS)
+        self.label.pack(pady=(0, 15))
+
+        self.input_frame = ctk.CTkFrame(container, fg_color="transparent")
+        self.input_frame.pack(pady=5)
+
+        self.digit_entries = []
+        for i in range(4):
+            entry = ctk.CTkEntry(self.input_frame,
+                                 width=50, height=50,
+                                 fg_color=Colors.SECONDARY,
+                                 border_color=Colors.Texts.BORDER,
+                                 text_color=Colors.Texts.HEADERS,
+                                 font=("Segoe UI", 18),
+                                 justify="center")
+            entry.pack(side="left", padx=5)
+            entry.bind("<KeyRelease>", lambda e, idx=i: self.validate_input(e, idx))
+            self.digit_entries.append(entry)
+
+        self.confirm_btn = ctk.CTkButton(container, text="Confirm",
+                                         command=self.on_confirm,
+                                         width=120, height=40,
+                                         fg_color=Colors.Buttons.PRIMARY,
+                                         hover_color=Colors.Buttons.PRIMARY_HOVER,
+                                         font=("Segoe UI", 12, "bold"),
+                                         text_color="white",
+                                         state="disabled")
+        self.confirm_btn.pack(pady=(20, 0))
+
         self.grab_set()
-        
-    def validate_input(self, event):
-        entry = self.entry.get().strip()
-        if len(entry) == 4 and entry.isdigit():
+
+        self.after(100, lambda: self.digit_entries[0].focus_set())
+
+    def validate_input(self, event, idx):
+        if event.char.isdigit():
+            self.digit_entries[idx].delete(0, "end")
+            self.digit_entries[idx].insert(0, event.char)
+            if idx < 3:
+                self.digit_entries[idx + 1].focus_set()
+  
+        elif event.keysym == "BackSpace":
+            if not self.digit_entries[idx].get() and idx > 0:
+                self.digit_entries[idx - 1].focus_set()
+                self.digit_entries[idx - 1].delete(0, "end")
+
+        passcode = "".join(entry.get() for entry in self.digit_entries)
+        if len(passcode) == 4 and passcode.isdigit():
             self.confirm_btn.configure(state="normal")
         else:
             self.confirm_btn.configure(state="disabled")
-    
-    def on_confirm(self):
-        self.password = self.entry.get().strip()
-        self.destroy()
 
+    def on_confirm(self):
+        self.password = "".join(entry.get() for entry in self.digit_entries)
+        self.destroy()
 
 class QuestionFrame(ctk.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-        self.configure(fg_color="#2B2B2B", corner_radius=10, border_width=2, border_color="#404040")
+        self.configure(fg_color=Colors.Cards.BACKGROUND, corner_radius=10, border_width=2, border_color=Colors.Cards.BORDER)
         self.delete_mode = False
         self.question_id = None
         self.question_type = "MCQ"
-        self.normal_border = "#404040"
-        self.error_border = "#FF0000"
+        self.normal_border = Colors.Cards.BORDER
+        self.error_border = Colors.DANGER
         self._create_widgets()
         self._add_input_validation()
 
@@ -64,7 +120,7 @@ class QuestionFrame(ctk.CTkFrame):
         self.grid_columnconfigure(1, weight=1)
 
         self.select_var = ctk.BooleanVar(value=False)
-        self.select_checkbox = ctk.CTkCheckBox(self, variable=self.select_var, text="")
+        self.select_checkbox = ctk.CTkCheckBox(self, variable=self.select_var, text="", fg_color=Colors.SUCCESS)
         self.select_checkbox.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
         self.select_checkbox.grid_remove()
 
@@ -76,16 +132,21 @@ class QuestionFrame(ctk.CTkFrame):
         self.meta_frame.grid(row=0, column=0, sticky="ew")
         self.meta_frame.grid_columnconfigure((0,1,2,3), weight=1)
 
-        self.type_combobox = ctk.CTkComboBox(self.meta_frame, values=["MCQ", "True/False", "One Word"], command=self.update_question_type, width=120)
+        self.type_combobox = ctk.CTkComboBox(self.meta_frame, values=["MCQ", "True/False", "One Word"], command=self.update_question_type, width=120, fg_color=Colors.Buttons.PRIMARY, border_color=Colors.Buttons.PRIMARY_HOVER)
         self.type_combobox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-        self.tag_entry = ctk.CTkEntry(self.meta_frame, placeholder_text="Tags", width=140)
+        self.tag_entry = ctk.CTkEntry(self.meta_frame, placeholder_text="Tags", width=140,
+                                      fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER,
+                                      text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER)
         self.tag_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-        self.marks_entry = ctk.CTkEntry(self.meta_frame, placeholder_text="Marks", width=80)
+        self.marks_entry = ctk.CTkEntry(self.meta_frame, placeholder_text="Marks", width=80,
+                                      fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER,
+                                      text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER)
         self.marks_entry.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
-        self.question_text = ctk.CTkTextbox(self.details_frame, height=80, wrap="word")
+        self.question_text = ctk.CTkTextbox(self.details_frame, height=80, wrap="word",
+                                      fg_color=Colors.SECONDARY, border_color=Colors.Inputs.BORDER)
         self.question_text.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
 
         self.options_container = ctk.CTkFrame(self.details_frame, fg_color="transparent")
@@ -106,10 +167,10 @@ class QuestionFrame(ctk.CTkFrame):
     def setup_mcq_options(self):
         self.option_entries = []
         for i in range(4):
-            entry = ctk.CTkEntry(self.options_container, placeholder_text=f"Option {i+1}")
+            entry = ctk.CTkEntry(self.options_container, placeholder_text=f"Option {i+1}", fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER, text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER)
             entry.pack(padx=2, pady=2, fill="x")
             self.option_entries.append(entry)
-        self.correct_answer = ctk.CTkComboBox(self.options_container, values=[f"Option {i+1}" for i in range(4)])
+        self.correct_answer = ctk.CTkComboBox(self.options_container, values=[f"Option {i+1}" for i in range(4)], fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER, text_color=Colors.Inputs.TEXT)
         self.correct_answer.set("Select Answer")
         self.correct_answer.pack(pady=5)
 
@@ -214,24 +275,38 @@ class CreatePaper(ctk.CTkFrame):
         self.file_path = file_path
         self.edit_mode = edit_mode
 
-        self.container = ctk.CTkFrame(self, fg_color="transparent")
-        self.container.pack(fill="both", expand=True, padx=20, pady=20)
+        control_frame = ctk.CTkFrame(master, fg_color=Colors.SECONDARY, height=120, width=1000)
+        control_frame.pack(fill="x", pady=10, padx=20)
+        control_frame.pack_propagate(False)
 
-        control_frame = ctk.CTkFrame(self.container, fg_color="transparent")
-        control_frame.pack(fill="x", pady=5)
-        PrimaryButton(control_frame, text="Add Question", command=self.add_question).pack(side="left", padx=5)
-        PrimaryButton(control_frame, text="Save Paper", command=self.save_paper).pack(side="left", padx=5)
-        ErrorButton(control_frame, text="Delete Questions", command=self.toggle_delete_mode).pack(side="right", padx=5)
+        logo = ctk.CTkLabel(
+            master=control_frame,
+            text="Brainy Studio",
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\logo.png")), size=(50, 50)),
+            font=("Consolas", 14, "bold"),
+            compound="top",
+            text_color=Colors.HIGHLIGHT
+        )
+        logo.pack(padx=10, pady=10, side="left")
         
+        PrimaryButton(control_frame, text="Add Question", command=self.add_question, width=130, height=42).pack(side="left", padx=5)
+        PrimaryButton(control_frame, text="Save Paper", command=self.save_paper, width=130, height=42).pack(side="left", padx=5)
+        PrimaryButton(control_frame, text="Question Bank", command=self.save_paper, width=130, height=42).pack(side="left", padx=5)
+        ErrorButton(control_frame, text="Delete Questions", command=self.toggle_delete_mode, width=130, height=42).pack(side="left", padx=5)
 
-        search_frame = ctk.CTkFrame(self.container, fg_color="transparent")
-        search_frame.pack(fill="x", pady=5)
-        self.search_input = ctk.CTkEntry(search_frame, placeholder_text="Search...", width=300)
-        self.search_input.pack(side="left", padx=5, fill="x", expand=True)
+        search_frame = ctk.CTkFrame(control_frame, fg_color="transparent")
+        search_frame.pack(side="right", padx=10, pady=10)
+        
+        self.search_input = ctk.CTkEntry(search_frame, placeholder_text="Search...", width=230, height=42,
+                                         fg_color=Colors.Inputs.BACKGROUND,
+                                        border_color=Colors.Inputs.BORDER,
+                                        placeholder_text_color=Colors.Inputs.PLACEHOLDER)
+        self.search_input.pack(side="left", padx=5, expand=True)
         self.search_input.bind("<KeyRelease>", lambda e: self.perform_search())
-        SearchButton(search_frame, text="Search", command=self.perform_search).pack(side="left", padx=5)
+        # self.search_input.pack_propagate(False)
+        SearchButton(search_frame, text="Search", command=self.perform_search,width=110, height=42).pack(side="left", padx=5)  
 
-        self.workspace = ctk.CTkScrollableFrame(self.container, fg_color="transparent")
+        self.workspace = ctk.CTkScrollableFrame(self, fg_color="transparent", width=800, height=600)
         self.workspace.pack(fill="both", expand=True)
 
         if self.edit_mode and self.file_path:

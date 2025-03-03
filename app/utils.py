@@ -1,9 +1,28 @@
+# ==========================================================
+#  * Module : utils.py - Utility Functions
+#  * Project : Brainy Studio - Question Paper Generator
+#  * Author  : Bhatt Akshat S
+#  * Updated : 04-03-2025
+#  * Version : 1.0.2
+#  * License : MIT License
+#  * GitHub  : https://github.com/AkshatBhatt-786/brainy-studio/blob/main/app/utils.py
+#  * Description:
+#      Contains helper functions for common operations such as
+#      file handling, encryption, and UI positioning.
+#  ^ Credits | References:
+#  & Stack Overflow (https://stackoverflow.com/q/1234567)
+#  & Python Docs (https://docs.python.org/3/library/)
+#  & CustomTkinter Docs (https://customtkinter.tomschimansky.com/)
+# ==========================================================
+
 import customtkinter as ctk
 from typing import Tuple
 import os
 import sys
 
+
 def centerWindow(parent: ctk.CTk, width: int, height: int, scale_factor: float = 1.0, variation: Tuple[int, int] = (0, 0)):
+    # ! Credits | References : StakeOverFlow
     screen_width = parent.winfo_screenwidth()
     screen_height = parent.winfo_screenheight()
 

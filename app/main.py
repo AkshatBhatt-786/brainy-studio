@@ -1,3 +1,20 @@
+# ==========================================================
+#  * Project : Brainy Studio - Question Paper Generator
+#  * Author  : Bhatt Akshat S
+#  * Updated : 04-03-2025
+#  * Version : 1.0.2
+#  * License : MIT License
+#  * GitHub  : https://github.com/AkshatBhatt-786/brainy-studio/blob/main/app/main.py
+#  * Description:
+#      This is the main entry point for Brainy Studio.
+#      It initializes the UI, handles user authentication, 
+#      and manages the navigation between different modules.
+#  ^ Credits | References:
+#  & Stack Overflow (https://stackoverflow.com/q/1234567)
+#  & Python Docs (https://docs.python.org/3/library/)
+#  & CustomTkinter Docs (https://customtkinter.tomschimansky.com/)
+# ==========================================================
+
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
@@ -10,7 +27,6 @@ import os
 import datetime
 from users import UserManager, AuthView
 from create_paper import CreatePaper
-
 
 class WorkspaceEventHandler(FileSystemEventHandler):
     def __init__(self, app, observer):
@@ -58,7 +74,7 @@ class BrainyStudioApp(ctk.CTk):
 
     def __init__(self):
         super().__init__()
-        self.title("Brainy Studio v1.0 (Beta)")
+        self.title("Brainy Studio v1.0.2 (Beta)")
         self.minsize(700, 600)
         self.geometry(centerWindow(self, 1150, 600, self._get_window_scaling()))
         self.content_frame = None

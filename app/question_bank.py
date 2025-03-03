@@ -4,6 +4,7 @@ from utils import centerWindow
 import pandas as pd
 import os
 
+
 EXCEL_FILE = r"D:\github_projects\brainy-studio\app\database\question_bank.xlsx"
 
 
@@ -115,8 +116,6 @@ class QuestionBank(ctk.CTkToplevel):
             self.tree.insert("", "end", values=(
                 row["Question ID"], full_question, row["Tags"], row["Marks"], row["Options"], row["Question Type"], row["Answer"]
             ), tags=(displayed_question,))
-
-
     
     def sort_questions(self, event=None):
         selected_sort = self.sort_by.get()
@@ -132,13 +131,13 @@ class QuestionBank(ctk.CTkToplevel):
     def add_selected_questions(self):
         selected_items = self.tree.selection()
         selected_questions = [
-            (self.tree.item(item, "values")[0],  # Question ID
-             self.tree.item(item, "values")[1],  # Question Text
-             self.tree.item(item, "values")[2],  # Tags
-             self.tree.item(item, "values")[3],  # Marks
-             self.tree.item(item, "values")[4],  # Options
-             self.tree.item(item, "values")[5],  # Question Type
-             self.tree.item(item, "values")[6])  # Answer
+            (self.tree.item(item, "values")[0],  # & Question ID
+             self.tree.item(item, "values")[1],  # & Question Text
+             self.tree.item(item, "values")[2],  # & Tags
+             self.tree.item(item, "values")[3],  # & Marks
+             self.tree.item(item, "values")[4],  # & Options
+             self.tree.item(item, "values")[5],  # & Question Type
+             self.tree.item(item, "values")[6])  # & Answer
             for item in selected_items
         ]
 

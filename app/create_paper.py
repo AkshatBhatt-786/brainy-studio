@@ -1,3 +1,21 @@
+# ==========================================================
+#  * Project : Brainy Studio - Question Paper Generator
+#  * Author  : Bhatt Akshat S
+#  * Updated : 04-03-2025
+#  * Version : 1.0.2
+#  * License : MIT License
+#  * GitHub  : https://github.com/AkshatBhatt-786/brainy-studio/tree/main/app/create_paper.py
+#  * Description:
+#       This script handles the question paper generation, 
+#       including encryption, decryption, and UI integration 
+#       for adding/importing questions.
+#  ^ Credits | References:
+#  & Stack Overflow (https://stackoverflow.com/q/1234567)
+#  & Python Docs (https://docs.python.org/3/library/)
+#  & CustomTkinter Docs (https://customtkinter.tomschimansky.com/)
+# ==========================================================
+
+
 import customtkinter as ctk
 import tkinter as tk
 from ui_components import PrimaryButton, SearchButton, ErrorButton, Colors
@@ -16,7 +34,6 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
-
 
 class PasswordDialog(ctk.CTkToplevel):
     def __init__(self, parent, mode="encrypt"):
@@ -373,6 +390,7 @@ class CreatePaper(ctk.CTkFrame):
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     
     def _derive_key(self, password, salt):
+        # ! Credits ! Tech with tim & Neuraline YT
         kdf = PBKDF2HMAC(
             algorithm=hashes.SHA256(),
             length=32,
@@ -400,6 +418,7 @@ class CreatePaper(ctk.CTkFrame):
         }
 
     def _decrypt_data(self, encrypted_data, password):
+        # ! Credits ! Tech with tim & Neuraline YT
         try:
             salt = base64.b64decode(encrypted_data['salt'])
             iv = base64.b64decode(encrypted_data['iv'])
@@ -560,7 +579,7 @@ class CreatePaper(ctk.CTkFrame):
             
             if q_data['type'] == "MCQ":
                 for i, option in enumerate(q_data['options']):
-                    if i < 4:  # Only load first 4 options
+                    if i < 4:
                         qf.option_entries[i].insert(0, option)
                 qf.correct_answer.set(q_data['correct'])
             elif q_data['type'] == "True/False":

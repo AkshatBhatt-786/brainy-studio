@@ -9,6 +9,10 @@ from utils import centerWindow, getPath
 from PIL import Image
 import customtkinter as ctk
 
+# ^ Author : Bhatt Akshat S
+# ^ Last Updated : 17-01-2025
+# ^ Version : 1.0.2 ^
+
 
 class UserManager:
     
@@ -37,6 +41,7 @@ class UserManager:
     pass
     
     def is_strong_password(self, password):
+        # ! Neuroline Pattern Recognition
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         return bool(re.match(pattern, password))
     

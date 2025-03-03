@@ -2,6 +2,7 @@ import sqlite3
 import os
 import re
 import hashlib
+from tkinter import messagebox
 import tkinter.filedialog as fd
 from ui_components import *
 from utils import centerWindow, getPath
@@ -55,7 +56,7 @@ class UserManager:
             try:
                 os.makedirs(workspace, exist_ok=True)
             except OSError:
-                print("failed to create directory!")
+                messagebox.show_error("OS Error", "failed to create directory!")
             self.cursor.execute("""
                 INSERT INTO users (username, password, workspace)
                 VALUES (?, ?, ?)

@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import tkinter as tk
 from ui_components import PrimaryButton, SearchButton, ErrorButton, Colors
+from question_bank import QuestionBank
 from tkinter import filedialog, messagebox
 from utils import getPath, centerWindow
 from PIL import Image
@@ -15,6 +16,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
+
 
 class PasswordDialog(ctk.CTkToplevel):
     def __init__(self, parent, mode="encrypt"):
@@ -31,8 +33,7 @@ class PasswordDialog(ctk.CTkToplevel):
         self.configure(fg_color=Colors.BACKGROUND)
 
         self.password = None
-
-        # Main container
+        
         container = ctk.CTkFrame(self, fg_color="transparent")
         container.pack(padx=20, pady=15, fill="both", expand=True)
 
@@ -108,6 +109,7 @@ class QuestionFrame(ctk.CTkFrame):
         super().__init__(master, **kwargs)
         self.configure(fg_color=Colors.Cards.BACKGROUND, corner_radius=10, border_width=2, border_color=Colors.Cards.BORDER)
         self.delete_mode = False
+        self.master = master
         self.question_id = None
         self.question_type = "MCQ"
         self.normal_border = Colors.Cards.BORDER
@@ -146,7 +148,7 @@ class QuestionFrame(ctk.CTkFrame):
         self.marks_entry.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
         self.question_text = ctk.CTkTextbox(self.details_frame, height=80, wrap="word",
-                                      fg_color=Colors.SECONDARY, border_color=Colors.Inputs.BORDER)
+                                      fg_color=Colors.PRIMARY, border_color=Colors.Inputs.BORDER)
         self.question_text.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
 
         self.options_container = ctk.CTkFrame(self.details_frame, fg_color="transparent")
@@ -166,13 +168,36 @@ class QuestionFrame(ctk.CTkFrame):
 
     def setup_mcq_options(self):
         self.option_entries = []
+
         for i in range(4):
-            entry = ctk.CTkEntry(self.options_container, placeholder_text=f"Option {i+1}", fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER, text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER)
+            entry = ctk.CTkEntry(self.options_container, 
+                                 placeholder_text=f"Option {i+1}", 
+                                 fg_color=Colors.Inputs.BACKGROUND, 
+                                 border_color=Colors.Inputs.BORDER, 
+                                 text_color=Colors.Inputs.TEXT, 
+                                 placeholder_text_color=Colors.Inputs.PLACEHOLDER)
             entry.pack(padx=2, pady=2, fill="x")
+            entry.bind("<KeyRelease>", lambda e: self.update_correct_answer_choices())
             self.option_entries.append(entry)
-        self.correct_answer = ctk.CTkComboBox(self.options_container, values=[f"Option {i+1}" for i in range(4)], fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER, text_color=Colors.Inputs.TEXT)
+
+        self.correct_answer = ctk.CTkComboBox(self.options_container, 
+                                              values=[],  # Initially empty
+                                              fg_color=Colors.Inputs.BACKGROUND, 
+                                              border_color=Colors.Inputs.BORDER, 
+                                              text_color=Colors.Inputs.TEXT)
         self.correct_answer.set("Select Answer")
         self.correct_answer.pack(pady=5)
+
+    def update_correct_answer_choices(self):
+        options = [entry.get().strip() for entry in self.option_entries if entry.get().strip()]
+        if not options:
+            self.correct_answer.configure(values=[""])
+            self.correct_answer.set("Select Answer")
+        else:
+            self.correct_answer.configure(values=options)
+            if self.correct_answer.get() not in options:
+                self.correct_answer.set("Select Answer")
+
 
     def setup_truefalse_options(self):
         self.tf_var = ctk.StringVar(value="True")
@@ -266,13 +291,14 @@ class QuestionFrame(ctk.CTkFrame):
     def is_selected(self): return self.select_var.get()
 
 class CreatePaper(ctk.CTkFrame):
-    def __init__(self, master, edit_mode=False, file_path=None):
+    def __init__(self, master, edit_mode=False, file_path=None, parent=None):
         super().__init__(master)
         self.configure(fg_color="transparent")
         self.question_frames = []
         self.delete_mode = False
         self.current_search_query = ""
         self.file_path = file_path
+        self.parent = parent
         self.edit_mode = edit_mode
 
         control_frame = ctk.CTkFrame(master, fg_color=Colors.SECONDARY, height=120, width=1000)
@@ -291,7 +317,7 @@ class CreatePaper(ctk.CTkFrame):
         
         PrimaryButton(control_frame, text="Add Question", command=self.add_question, width=130, height=42).pack(side="left", padx=5)
         PrimaryButton(control_frame, text="Save Paper", command=self.save_paper, width=130, height=42).pack(side="left", padx=5)
-        PrimaryButton(control_frame, text="Question Bank", command=self.save_paper, width=130, height=42).pack(side="left", padx=5)
+        PrimaryButton(control_frame, text="Question Bank", command=self.open_question_bank, width=130, height=42).pack(side="left", padx=5)
         ErrorButton(control_frame, text="Delete Questions", command=self.toggle_delete_mode, width=130, height=42).pack(side="left", padx=5)
 
         search_frame = ctk.CTkFrame(control_frame, fg_color="transparent")
@@ -315,6 +341,11 @@ class CreatePaper(ctk.CTkFrame):
         if self.edit_mode:
             self.load_paper() 
 
+    def open_question_bank(self):
+        self.parent.attributes("-topmost", False)
+        QuestionBank(self.parent, parent=self)
+        return
+    
     def generate_question_id(self):
         return ''.join(random.choices(string.ascii_uppercase + string.digits, k=6))
     
@@ -397,7 +428,6 @@ class CreatePaper(ctk.CTkFrame):
             
             if not self.current_search_query or text_match or tag_match or answer_match:
                 qf.pack(fill="x", pady=5, padx=5)
-
 
     def save_paper(self):
         all_questions = []
@@ -487,27 +517,22 @@ class CreatePaper(ctk.CTkFrame):
         threading.Thread(target=decrypt_thread, daemon=True).start()
 
     def _load_questions(self, questions_data):
-        # Clear existing questions
         for qf in self.workspace.winfo_children():
             if isinstance(qf, QuestionFrame):
                 qf.destroy()
         self.question_frames = []
         
-        # Load new questions
         for q_data in questions_data:
             qf = QuestionFrame(self.workspace)
             qf.question_id = q_data['id']
             
-            # Set basic fields
             qf.question_text.insert("1.0", q_data['text'])
             qf.tag_entry.insert(0, q_data['tags'])
             qf.marks_entry.insert(0, q_data['marks'])
             
-            # Set question type first
             qf.type_combobox.set(q_data['type'])
-            qf.update_question_type(q_data['type'])  # This creates the UI elements
+            qf.update_question_type(q_data['type'])  
             
-            # Set type-specific data
             if q_data['type'] == "MCQ":
                 for i, option in enumerate(q_data['options']):
                     if i < 4:  # Only load first 4 options
@@ -539,3 +564,48 @@ class CreatePaper(ctk.CTkFrame):
                         self._load_questions(questions)
             except Exception as e:
                 messagebox.showerror("Error", f"Failed to load paper: {str(e)}")
+    
+    def add_questions_from_bank(self, questions):
+        valid_types = {"MCQ", "True/False", "One Word"}
+
+        for q in questions:
+            question_id, question_text, tags, marks, options, q_type, answer = q
+
+            if q_type not in valid_types:
+                messagebox.showerror("Invalid Question Type", f"Question '{question_text[:30]}...' has an invalid type: {q_type}")
+                continue
+
+            qf = QuestionFrame(self.workspace)
+            qf.question_id = question_id  
+            qf.question_text.insert("1.0", question_text)  
+            qf.tag_entry.insert(0, tags)  
+            qf.marks_entry.insert(0, marks)  
+
+            qf.type_combobox.set(q_type)
+            qf.update_question_type(q_type)
+
+            if q_type == "MCQ":
+                options_list = options.split(", ") if options else []  
+
+                for i, opt in enumerate(options_list):
+                    if i < len(qf.option_entries):
+                        qf.option_entries[i].insert(0, opt) 
+
+                qf.correct_answer.configure(values=options_list) 
+
+                if answer.strip() in options_list:
+                    qf.correct_answer.set(answer.strip())
+                else:
+                    qf.correct_answer.set("Select Answer")
+
+            elif q_type == "True/False":
+                qf.tf_var.set("True" if answer == "1" else "False")
+
+            elif q_type == "One Word":
+                qf.answer_entry.insert(0, answer)
+
+            qf.pack(fill="x", pady=5, padx=5)
+            self.question_frames.append(qf)
+
+        self.perform_search()
+

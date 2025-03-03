@@ -305,7 +305,7 @@ class BrainyStudioApp(ctk.CTk):
                     text_color="white",
                     hover_color=Colors.ACCENT,
                     corner_radius=10,
-                    command=lambda: self.redirect_to_edit_paper_page(file_path)
+                    command=lambda filepath=file_path: self.redirect_to_edit_paper_page(file_path)
                 )
                 file_button.pack(fill="x", padx=10, pady=5)
 
@@ -371,18 +371,15 @@ class BrainyStudioApp(ctk.CTk):
     
     def redirect_to_edit_paper_page(self, filepath=None):
         if filepath:
-            # Destroy current content and load editor with file
             for widget in self.main_content.winfo_children():
                 widget.destroy()
             
-            # Create editor with file path
-            self.edit_page = CreatePaper(self, edit_mode=True, file_path=filepath)
+            self.edit_page = CreatePaper(self, parent=self, edit_mode=True, file_path=filepath)
             self.edit_page.pack(padx=10, pady=10, fill="both", expand=True)
         else:
             # Handle new edit creation
             self.redirect("edit-paper")
 
-    # left from herere.....
     def redirect(self, page_name):
         for widget in self.main_content.winfo_children():
             widget.destroy()
@@ -390,7 +387,7 @@ class BrainyStudioApp(ctk.CTk):
         if page_name == "create-paper":
             if self.edit_page:
                 self.edit_page.pack_forget()
-            self.create_paper = CreatePaper(self.main_content)
+            self.create_paper = CreatePaper(self.main_content, parent=self)
             self.create_paper.pack(padx=10, pady=10, anchor="center")
 
         if page_name == "home-page":
@@ -401,7 +398,7 @@ class BrainyStudioApp(ctk.CTk):
         if page_name == "edit-page":
             if self.create_paper:
                 self.create_paper.pack_forget()
-            self.edit_page = CreatePaper(self.main_content, edit_mode=True)
+            self.edit_page = CreatePaper(self.main_content, edit_mode=True, parent=self)
             self.edit_page.pack(padx=10, pady=10, anchor="center")
 
 

@@ -134,7 +134,7 @@ class QuestionBank(ctk.CTkToplevel):
             (self.tree.item(item, "values")[0],  # & Question ID
              self.tree.item(item, "values")[1],  # & Question Text
              self.tree.item(item, "values")[2],  # & Tags
-             self.tree.item(item, "values")[3],  # & Marks
+             int(float(self.tree.item(item, "values")[3])),  # & Marks
              self.tree.item(item, "values")[4],  # & Options
              self.tree.item(item, "values")[5],  # & Question Type
              self.tree.item(item, "values")[6])  # & Answer

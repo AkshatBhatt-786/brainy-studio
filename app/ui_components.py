@@ -63,6 +63,18 @@ class Colors:
     class Modals:
         BACKGROUND = "#1E293B"
         BORDER = "#334155"
+    
+    class Radio:
+        BACKGROUND = "#2B2B2B"       
+        PRIMARY = "#4A90E2"            
+        SECONDARY = "#6C757D"         
+        HOVER = "#357ABD"            
+        ACTIVE = "#2D6DB4"           
+        BORDER = "#3D3D3D"            
+        TEXT = "#F8F9FA"         
+        DISABLED = "#495057"           
+        CHECKMARK = "#FFFFFF"        
+        GLOW = "rgba(74, 144, 226, 0.2)"
 
 
 class PrimaryButton(ctk.CTkButton):

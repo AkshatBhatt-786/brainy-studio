@@ -15,7 +15,6 @@
 #  & CustomTkinter Docs (https://customtkinter.tomschimansky.com/)
 # ==========================================================
 
-
 import customtkinter as ctk
 import tkinter as tk
 from ui_components import PrimaryButton, SearchButton, ErrorButton, Colors
@@ -131,6 +130,9 @@ class QuestionFrame(ctk.CTkFrame):
         self.question_type = "MCQ"
         self.normal_border = Colors.Cards.BORDER
         self.error_border = Colors.DANGER
+        self.option_entries = [] 
+        self.answer_vars = []     
+        self.correct_answer_var = ctk.StringVar()
         self._create_widgets()
         self._add_input_validation()
 
@@ -185,36 +187,102 @@ class QuestionFrame(ctk.CTkFrame):
 
     def setup_mcq_options(self):
         self.option_entries = []
+        self.answer_vars = []
+        self.correct_answer_var = ctk.StringVar(value="")
+
+        self.mcq_container = ctk.CTkFrame(self.options_container, 
+                                        fg_color="transparent",
+                                        border_width=1,
+                                        border_color=self.normal_border,
+                                        corner_radius=8)
+        self.mcq_container.pack(fill="x", pady=5, padx=5)
+
+        self.correct_answer_var = ctk.StringVar(value="")
 
         for i in range(4):
-            entry = ctk.CTkEntry(self.options_container, 
-                                 placeholder_text=f"Option {i+1}", 
-                                 fg_color=Colors.Inputs.BACKGROUND, 
-                                 border_color=Colors.Inputs.BORDER, 
-                                 text_color=Colors.Inputs.TEXT, 
-                                 placeholder_text_color=Colors.Inputs.PLACEHOLDER)
-            entry.pack(padx=2, pady=2, fill="x")
-            entry.bind("<KeyRelease>", lambda e: self.update_correct_answer_choices())
+            option_frame = ctk.CTkFrame(self.mcq_container, 
+                                      fg_color=Colors.Inputs.BACKGROUND,
+                                      corner_radius=6)
+            option_frame.pack(fill="x", pady=3, padx=2)
+
+            rb = ctk.CTkRadioButton(
+                option_frame,
+                text="",
+                variable=self.correct_answer_var,
+                value=str(i),
+                width=36,
+                height=36,
+                fg_color=Colors.Buttons.PRIMARY,
+                hover_color=Colors.Buttons.PRIMARY_HOVER,
+                border_color=Colors.Radio.BORDER,
+                text_color=Colors.Radio.TEXT,
+                state="disabled",
+                font=("Segoe UI", 13)
+            )
+            rb.pack(side="left", padx=(8, 5))
+
+            entry = ctk.CTkEntry(
+                option_frame,
+                placeholder_text=f"Option {i+1}",
+                fg_color="transparent",
+                border_width=0,
+                text_color=Colors.Inputs.BACKGROUND,
+                placeholder_text_color=Colors.Inputs.PLACEHOLDER,
+                font=("Segoe UI", 13)
+            )
+            entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
+            entry.bind("<KeyRelease>", lambda e, idx=i: self.update_option_state(idx))
+
             self.option_entries.append(entry)
+            self.answer_vars.append(rb)
 
-        self.correct_answer = ctk.CTkComboBox(self.options_container, 
-                                              values=[],  # Initially empty
-                                              fg_color=Colors.Inputs.BACKGROUND, 
-                                              border_color=Colors.Inputs.BORDER, 
-                                              text_color=Colors.Inputs.TEXT)
-        self.correct_answer.set("Select Answer")
-        self.correct_answer.pack(pady=5)
+    def __del__(self):
+        if hasattr(self, 'correct_answer_var'):
+            del self.correct_answer_var
+        if hasattr(self, 'answer_vars'):
+            for rb in self.answer_vars:
+                rb.destroy()
 
-    def update_correct_answer_choices(self):
-        options = [entry.get().strip() for entry in self.option_entries if entry.get().strip()]
-        if not options:
-            self.correct_answer.configure(values=[""])
-            self.correct_answer.set("Select Answer")
+    
+    def update_option_state(self, idx):
+        entry = self.option_entries[idx]
+        rb = self.answer_vars[idx]
+        text = entry.get().strip()
+
+    
+        if text:
+            rb.configure(text=text,
+                         state="normal",
+                         text_color=Colors.Inputs.TEXT,
+                         font=("Segoe UI", 12))
+
+            if self.correct_answer_var.get() == str(idx) and not text:
+                self.correct_answer_var.set("")
         else:
-            self.correct_answer.configure(values=options)
-            if self.correct_answer.get() not in options:
-                self.correct_answer.set("Select Answer")
+            rb.configure(text=f"Option {idx+1}",
+                         state="disabled",
+                         text_color=Colors.Inputs.PLACEHOLDER)
 
+            if self.correct_answer_var.get() == str(idx):
+                self.correct_answer_var.set("")
+
+        entry_border = Colors.DANGER if (self.delete_mode and not text) else Colors.Inputs.BORDER
+        entry.configure(border_color=entry_border)
+
+        self.update_idletasks()
+
+    def destroy(self):
+    
+        if hasattr(self, 'correct_answer_var'):
+            self.correct_answer_var.set("")
+            del self.correct_answer_var
+
+        if hasattr(self, 'answer_vars'):
+            for rb in self.answer_vars:
+                rb.destroy()
+            self.answer_vars.clear()
+
+        super().destroy()
 
     def setup_truefalse_options(self):
         self.tf_var = ctk.StringVar(value="True")
@@ -230,20 +298,28 @@ class QuestionFrame(ctk.CTkFrame):
         self.question_text.bind("<KeyRelease>", lambda e: self._clear_error_highlight(self.question_text))
         self.tag_entry.bind("<KeyRelease>", lambda e: self._clear_error_highlight(self.tag_entry))
         self.marks_entry.bind("<KeyRelease>", lambda e: self._clear_error_highlight(self.marks_entry))
-        self.correct_answer.bind("<<ComboboxSelected>>", lambda e: self._clear_error_highlight(self.correct_answer))
+  
         if hasattr(self, 'answer_entry'):
             self.answer_entry.bind("<KeyRelease>", lambda e: self._clear_error_highlight(self.answer_entry))
 
     def _validate_marks(self, value):
         return value == "" or value.isdigit()
 
-    def _clear_error_highlight(self, widget):
-        if isinstance(widget, str): widget = self.nametowidget(widget)
-        widget.configure(border_color=self.normal_border)
-
     def _highlight_error(self, widget):
-        widget.configure(border_color=self.error_border)
+        if widget == self.mcq_container:
+            widget.configure(border_color=self.error_border)
+        else:
+            widget.configure(border_color=self.error_border)
         widget.focus_set()
+
+    def _clear_error_highlight(self, widget):
+        if isinstance(widget, str): 
+            widget = self.nametowidget(widget)
+
+        if widget == self.mcq_container:
+            widget.configure(border_color=self.normal_border)
+        else:
+            widget.configure(border_color=self.normal_border)
 
     def validate_fields(self):
         errors = []
@@ -261,9 +337,9 @@ class QuestionFrame(ctk.CTkFrame):
             self._highlight_error(self.marks_entry)
 
         if self.question_type == "MCQ":
-            if self.correct_answer.get() == "Select Answer":
+            if not self.correct_answer_var.get():
                 errors.append("Please select correct answer")
-                self._highlight_error(self.correct_answer)
+                self._highlight_error(self.mcq_container)
             for i, entry in enumerate(self.option_entries):
                 if not entry.get().strip():
                     errors.append(f"Option {i+1} cannot be empty")
@@ -290,7 +366,11 @@ class QuestionFrame(ctk.CTkFrame):
         }
         if self.question_type == "MCQ":
             data["options"] = [entry.get().strip() for entry in self.option_entries]
-            data["correct"] = self.correct_answer.get()
+            try:
+                selected_idx = int(self.correct_answer_var.get())
+                data["correct"] = data["options"][selected_idx]
+            except (ValueError, IndexError):
+                data["correct"] = ""
         elif self.question_type == "True/False":
             data["correct"] = self.tf_var.get()
         elif self.question_type == "One Word":
@@ -332,10 +412,13 @@ class CreatePaper(ctk.CTkFrame):
         )
         logo.pack(padx=10, pady=10, side="left")
         
-        PrimaryButton(control_frame, text="Add Question", command=self.add_question, width=130, height=42).pack(side="left", padx=5)
-        PrimaryButton(control_frame, text="Save Paper", command=self.save_paper, width=130, height=42).pack(side="left", padx=5)
+        PrimaryButton(control_frame, text="Add Question", command=self.add_question, width=130, height=42,
+                      image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\add.png")), size=(30, 30))).pack(side="left", padx=5)
+        PrimaryButton(control_frame, text="Save Paper", command=self.save_paper, width=130, height=42,
+                      image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\save.png")), size=(30, 30))).pack(side="left", padx=5)
         PrimaryButton(control_frame, text="Question Bank", command=self.open_question_bank, width=130, height=42).pack(side="left", padx=5)
-        ErrorButton(control_frame, text="Delete Questions", command=self.toggle_delete_mode, width=130, height=42).pack(side="left", padx=5)
+        ErrorButton(control_frame, text="Delete Questions", command=self.toggle_delete_mode, width=130, height=42,
+                    image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\delete.png")), size=(30, 30))).pack(side="left", padx=5)
 
         search_frame = ctk.CTkFrame(control_frame, fg_color="transparent")
         search_frame.pack(side="right", padx=10, pady=10)
@@ -347,7 +430,7 @@ class CreatePaper(ctk.CTkFrame):
         self.search_input.pack(side="left", padx=5, expand=True)
         self.search_input.bind("<KeyRelease>", lambda e: self.perform_search())
         # self.search_input.pack_propagate(False)
-        SearchButton(search_frame, text="Search", command=self.perform_search,width=110, height=42).pack(side="left", padx=5)  
+        SearchButton(search_frame, text="", image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\search.png")), size=(30, 30)), command=self.perform_search,width=110, height=42).pack(side="left", padx=5)  
 
         self.workspace = ctk.CTkScrollableFrame(self, fg_color="transparent", width=800, height=600)
         self.workspace.pack(fill="both", expand=True)
@@ -565,31 +648,38 @@ class CreatePaper(ctk.CTkFrame):
             if isinstance(qf, QuestionFrame):
                 qf.destroy()
         self.question_frames = []
-        
+
         for q_data in questions_data:
             qf = QuestionFrame(self.workspace)
             qf.question_id = q_data['id']
-            
+
             qf.question_text.insert("1.0", q_data['text'])
             qf.tag_entry.insert(0, q_data['tags'])
             qf.marks_entry.insert(0, q_data['marks'])
-            
+
             qf.type_combobox.set(q_data['type'])
-            qf.update_question_type(q_data['type'])  
-            
+            qf.update_question_type(q_data['type'])
+
             if q_data['type'] == "MCQ":
                 for i, option in enumerate(q_data['options']):
-                    if i < 4:
+                    if i < len(qf.option_entries):
                         qf.option_entries[i].insert(0, option)
-                qf.correct_answer.set(q_data['correct'])
+                        qf.update_option_state(i)
+
+                try:
+                    correct_idx = q_data['options'].index(q_data['correct'])
+                    qf.correct_answer_var.set(str(correct_idx))
+                except ValueError:
+                    qf.correct_answer_var.set("")
+
             elif q_data['type'] == "True/False":
                 qf.tf_var.set(q_data['correct'])
             elif q_data['type'] == "One Word":
                 qf.answer_entry.insert(0, q_data['correct'])
-            
+
             qf.pack(fill="x", pady=5, padx=5)
             self.question_frames.append(qf)
-        
+
         self.perform_search()
     
     def load_existing_paper(self):
@@ -629,18 +719,18 @@ class CreatePaper(ctk.CTkFrame):
             qf.update_question_type(q_type)
 
             if q_type == "MCQ":
-                options_list = options.split(", ") if options else []  
+                options_list = options.split(", ") if options else []
 
                 for i, opt in enumerate(options_list):
                     if i < len(qf.option_entries):
-                        qf.option_entries[i].insert(0, opt) 
+                        qf.option_entries[i].insert(0, opt)
+                        qf.update_option_state(i)
 
-                qf.correct_answer.configure(values=options_list) 
-
-                if answer.strip() in options_list:
-                    qf.correct_answer.set(answer.strip())
-                else:
-                    qf.correct_answer.set("Select Answer")
+                try:
+                    correct_idx = options_list.index(answer.strip())
+                    qf.correct_answer_var.set(str(correct_idx))
+                except ValueError:
+                    qf.correct_answer_var.set("")
 
             elif q_type == "True/False":
                 qf.tf_var.set("True" if answer == "1" else "False")

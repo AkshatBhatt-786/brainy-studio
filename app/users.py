@@ -1,6 +1,7 @@
 import sqlite3
 import os
 import re
+import sys
 import hashlib
 from tkinter import messagebox
 import tkinter.filedialog as fd
@@ -85,6 +86,11 @@ class AuthView(ctk.CTkToplevel):
         self.user_manager = user_manager
         self.on_login_success = on_login_success
         self.title("Auth | BrainyStudio")
+        try:
+            if sys.platform.startswith("win"):
+                self.after(200, lambda: self.iconbitmap(getPath("assets\\icons\\icon.ico")))
+        except Exception:
+            pass
         self.logged_in = False
         self.resizable(False, False)
         self.configure(fg_color=Colors.PRIMARY)

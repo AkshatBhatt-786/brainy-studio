@@ -15,9 +15,10 @@
 #  & CustomTkinter Docs (https://customtkinter.tomschimansky.com/)
 # ==========================================================
 
-import customtkinter as ctk
+import sys
 import tkinter as tk
 from ui_components import PrimaryButton, SearchButton, ErrorButton, Colors
+import customtkinter as ctk
 from question_bank import QuestionBank
 from tkinter import filedialog, messagebox
 from utils import getPath, centerWindow
@@ -25,6 +26,7 @@ from PIL import Image
 import json
 import os
 import random
+from rich import print
 import string
 import base64
 import threading
@@ -38,6 +40,11 @@ class PasswordDialog(ctk.CTkToplevel):
     def __init__(self, parent, mode="encrypt"):
         super().__init__(parent)
         self.attributes("-topmost", True)
+        try:
+            if sys.platform.startswith("win"):
+                self.after(200, lambda: self.iconbitmap(getPath("assets\\icons\\icon.ico")))
+        except Exception:
+            pass
         if mode == "encrypt":
             title_text = "Set a 4-digit passcode to secure your question paper."
         else:
@@ -156,15 +163,21 @@ class QuestionFrame(ctk.CTkFrame):
         self.type_combobox = ctk.CTkComboBox(self.meta_frame, values=["MCQ", "True/False", "One Word"], command=self.update_question_type, width=120, fg_color=Colors.Buttons.PRIMARY, border_color=Colors.Buttons.PRIMARY_HOVER)
         self.type_combobox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
+        self.tag_label = ctk.CTkLabel(self.meta_frame, text="Tag", text_color=Colors.Inputs.TEXT)
+        self.tag_label.grid(row=0, column=1, padx=5, pady=5, sticky="e")
+
         self.tag_entry = ctk.CTkEntry(self.meta_frame, placeholder_text="Tags", width=140,
                                       fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER,
                                       text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER)
-        self.tag_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
+        self.tag_entry.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+
+        self.marks_label = ctk.CTkLabel(self.meta_frame, text="Marks", text_color=Colors.Inputs.TEXT)
+        self.marks_label.grid(row=0, column=3, padx=5, pady=5, sticky="e")
 
         self.marks_entry = ctk.CTkEntry(self.meta_frame, placeholder_text="Marks", width=80,
                                       fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER,
                                       text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER)
-        self.marks_entry.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
+        self.marks_entry.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
 
         self.question_text = ctk.CTkTextbox(self.details_frame, height=80, wrap="word",
                                       fg_color=Colors.PRIMARY, border_color=Colors.Inputs.BORDER)
@@ -271,26 +284,13 @@ class QuestionFrame(ctk.CTkFrame):
 
         self.update_idletasks()
 
-    def destroy(self):
-    
-        if hasattr(self, 'correct_answer_var'):
-            self.correct_answer_var.set("")
-            del self.correct_answer_var
-
-        if hasattr(self, 'answer_vars'):
-            for rb in self.answer_vars:
-                rb.destroy()
-            self.answer_vars.clear()
-
-        super().destroy()
-
     def setup_truefalse_options(self):
         self.tf_var = ctk.StringVar(value="True")
         ctk.CTkRadioButton(self.options_container, text="True", variable=self.tf_var, value="True").pack(anchor="w", pady=2)
         ctk.CTkRadioButton(self.options_container, text="False", variable=self.tf_var, value="False").pack(anchor="w", pady=2)
 
     def setup_oneword_options(self):
-        self.answer_entry = ctk.CTkEntry(self.options_container, placeholder_text="Correct Answer")
+        self.answer_entry = ctk.CTkEntry(self.options_container, placeholder_text="Correct Answer", fg_color=Colors.Inputs.BACKGROUND, text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER, border_color=Colors.Inputs.BORDER)
         self.answer_entry.pack(fill="x", pady=5)
 
     def _add_input_validation(self):
@@ -413,12 +413,12 @@ class CreatePaper(ctk.CTkFrame):
         logo.pack(padx=10, pady=10, side="left")
         
         PrimaryButton(control_frame, text="Add Question", command=self.add_question, width=130, height=42,
-                      image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\add.png")), size=(30, 30))).pack(side="left", padx=5)
+                      image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\add.png")), size=(20, 20))).pack(side="left", padx=5)
         PrimaryButton(control_frame, text="Save Paper", command=self.save_paper, width=130, height=42,
-                      image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\save.png")), size=(30, 30))).pack(side="left", padx=5)
+                      image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\save.png")), size=(20, 20))).pack(side="left", padx=5)
         PrimaryButton(control_frame, text="Question Bank", command=self.open_question_bank, width=130, height=42).pack(side="left", padx=5)
         ErrorButton(control_frame, text="Delete Questions", command=self.toggle_delete_mode, width=130, height=42,
-                    image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\delete.png")), size=(30, 30))).pack(side="left", padx=5)
+                    image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\delete.png")), size=(20, 20))).pack(side="left", padx=5)
 
         search_frame = ctk.CTkFrame(control_frame, fg_color="transparent")
         search_frame.pack(side="right", padx=10, pady=10)
@@ -648,6 +648,7 @@ class CreatePaper(ctk.CTkFrame):
             if isinstance(qf, QuestionFrame):
                 qf.destroy()
         self.question_frames = []
+        print(questions_data)
 
         for q_data in questions_data:
             qf = QuestionFrame(self.workspace)
@@ -659,7 +660,6 @@ class CreatePaper(ctk.CTkFrame):
 
             qf.type_combobox.set(q_data['type'])
             qf.update_question_type(q_data['type'])
-
             if q_data['type'] == "MCQ":
                 for i, option in enumerate(q_data['options']):
                     if i < len(qf.option_entries):

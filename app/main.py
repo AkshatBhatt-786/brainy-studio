@@ -27,6 +27,18 @@ import os
 import datetime
 from users import UserManager, AuthView
 from create_paper import CreatePaper
+from generate_pdf import GeneratePDFUI
+
+# ^ Temporary for testing purpose
+subject_db = {  
+    "4341605": { 
+        "subject_name": "Chemistry (DDCET)",
+        "subject_date": "-",
+        "time_duration": "-",
+        "instructions": "1. Answer all questions.\n2. Use a scientific calculator if needed.\n3. Show proper units in numerical answers.\n4. Use chemical equations where applicable.\n5. Write legibly and clearly."
+    }
+}
+
 
 class WorkspaceEventHandler(FileSystemEventHandler):
     def __init__(self, app, observer):
@@ -77,6 +89,7 @@ class BrainyStudioApp(ctk.CTk):
         self.title("Brainy Studio v1.0.2 (Beta)")
         self.minsize(700, 600)
         self.geometry(centerWindow(self, 1150, 600, self._get_window_scaling()))
+        self.iconbitmap(bitmap=getPath("assets\\icons\\icon.ico"))
         self.content_frame = None
         self.user_manager = UserManager()
         self.auth_view = AuthView(self.user_manager, self.on_login_success)
@@ -154,7 +167,7 @@ class BrainyStudioApp(ctk.CTk):
 
         self._create_action_card("Create Paper", "assets\\images\\create-paper.png", 0, lambda: self.redirect_to_create_paper_page())
         self._create_action_card("Edit Paper", "assets\\images\\edit.png", 1, lambda: self.redirect("edit-page"))
-        self._create_action_card("Export Paper", "assets\\images\\export.png", 2, None)
+        self._create_action_card("Export Paper", "assets\\images\\export.png", 2, lambda: self.redirect_to_export_page())
 
         self.recent_projects_frame = ctk.CTkFrame(self.main_content, fg_color=Colors.SECONDARY, corner_radius=10)
         self.recent_projects_frame.pack(padx=20, pady=10, expand=True, fill="both")
@@ -184,6 +197,9 @@ class BrainyStudioApp(ctk.CTk):
 
     def redirect_to_home_page(self):
         self.redirect("home-page")
+
+    def redirect_to_export_page(self):
+        self.redirect("export-page")
 
     def _create_name_frame(self):
         self.name_frame = ctk.CTkScrollableFrame(
@@ -414,6 +430,11 @@ class BrainyStudioApp(ctk.CTk):
                 self.create_paper.pack_forget()
             self.edit_page = CreatePaper(self.main_content, edit_mode=True, parent=self, file_path=filepath)
             self.edit_page.pack(padx=10, pady=10, anchor="center")
+
+        if page_name == "export-page":
+            self.attributes("-topmost", False)
+            GeneratePDFUI(self, subject_db)
+            self.redirect("home-page")
 
 
 if __name__ == "__main__":

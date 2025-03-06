@@ -31,13 +31,68 @@ from generate_pdf import GeneratePDFUI
 
 # ^ Temporary for testing purpose
 subject_db = {  
-    "4341605": { 
-        "subject_name": "Chemistry (DDCET)",
-        "subject_date": "-",
-        "time_duration": "-",
-        "instructions": "1. Answer all questions.\n2. Use a scientific calculator if needed.\n3. Show proper units in numerical answers.\n4. Use chemical equations where applicable.\n5. Write legibly and clearly."
-    }
+    "BE02": {  
+        "subject_name": "Engineering Mathematics",  
+        "subject_date": "-",  
+        "time_duration": "-",  
+        "instructions": [  
+            "1. Stable Internet Required: Ensure a good connection.",  
+            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
+            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
+            "4. Answer all questions within the given time limit. No extra time will be provided.",  
+            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
+        ]  
+    },  
+    "BE01": {  
+        "subject_name": "English [Soft Skills]",  
+        "subject_date": "-",  
+        "time_duration": "-",  
+        "instructions": [  
+            "1. Stable Internet Required: Ensure a good connection.",  
+            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
+            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
+            "4. Answer all questions within the given time limit. No extra time will be provided.",  
+            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
+        ]  
+    },  
+    "BE03": {  
+        "subject_name": "Applied Physics",  
+        "subject_date": "-",  
+        "time_duration": "-",  
+        "instructions": [  
+            "1. Stable Internet Required: Ensure a good connection.",  
+            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
+            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
+            "4. Answer all questions within the given time limit. No extra time will be provided.",  
+            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
+        ]  
+    },  
+    "BE04": {  
+        "subject_name": "Organic Chemistry",  
+        "subject_date": "-",  
+        "time_duration": "-",  
+        "instructions": [  
+            "1. Stable Internet Required: Ensure a good connection.",  
+            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
+            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
+            "4. Answer all questions within the given time limit. No extra time will be provided.",  
+            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
+        ]  
+    },  
+    "BE05": {  
+        "subject_name": "Basics of Computer Science",  
+        "subject_date": "-",  
+        "time_duration": "-",  
+        "instructions": [  
+            "1. Stable Internet Required: Ensure a good connection.",  
+            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
+            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
+            "4. Answer all questions within the given time limit. No extra time will be provided.",  
+            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
+        ]  
+    }  
 }
+
 
 
 class WorkspaceEventHandler(FileSystemEventHandler):
@@ -432,10 +487,7 @@ class BrainyStudioApp(ctk.CTk):
             self.edit_page.pack(padx=10, pady=10, anchor="center")
 
         if page_name == "export-page":
-            self.attributes("-topmost", False)
-            GeneratePDFUI(self, subject_db)
-            self.redirect("home-page")
-
+            self.export_page = GeneratePDFUI(self, subject_db, self, self.main_content)
 
 if __name__ == "__main__":
     app = BrainyStudioApp()

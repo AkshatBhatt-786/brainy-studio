@@ -16,31 +16,25 @@ import sys
 import os
 import subprocess
 
-class GeneratePDFUI(ctk.CTkToplevel):
-    def __init__(self, master, subject_db):
+class GeneratePDFUI(ctk.CTkFrame):
+    def __init__(self, master, subject_db, parent, container):
         super().__init__(master)
-        self.attributes("-topmost", True)
-        self.title("Generate Exam Paper")
-        self.geometry(centerWindow(master, 1000, 600, self._get_window_scaling()))
-        try:
-            if sys.platform.startswith("win"):
-                self.after(200, lambda: self.iconbitmap(getPath("assets\\icons\\icon.ico")))
-        except Exception:
-            pass
+        self.parent = parent
+        self.parent.title("Export to PDF")
         self.configure(fg_color="#0F172A")
         self.subject_db = subject_db
         self.parsed_questions = []
         self.logo_path = ""
         self.answer_checked = ctk.StringVar(value="No")
+        self.main_frame = ctk.CTkFrame(container, fg_color="#1E293B", corner_radius=12)
+        self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
         
         self.create_widgets()
-        self.protocol("WM_DELETE_WINDOW", self.on_close)
+        # self.protocol("WM_DELETE_WINDOW", self.on_close)
     
     def create_widgets(self):
-        main_frame = ctk.CTkFrame(self, fg_color="#1E293B", corner_radius=12)
-        main_frame.pack(fill="both", expand=True, padx=10, pady=10)
 
-        header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        header_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         header_frame.pack(pady=10, padx=20, fill="x")
         
         ctk.CTkLabel(header_frame, text="Subject Code:").pack(side="left", padx=5)
@@ -67,7 +61,7 @@ class GeneratePDFUI(ctk.CTkToplevel):
         self.detail_labels['time_duration'] = ctk.CTkLabel(details_frame, text="")
         self.detail_labels['time_duration'].grid(row=2, column=1, padx=5, pady=2)
 
-        file_frame = ctk.CTkFrame(main_frame, fg_color="#334155", corner_radius=8)
+        file_frame = ctk.CTkFrame(self.main_frame, fg_color="#334155", corner_radius=8)
         file_frame.pack(pady=10, padx=20, fill="x")
         
         self.file_entry = ctk.CTkEntry(file_frame, placeholder_text="Select encrypted paper file")
@@ -79,7 +73,7 @@ class GeneratePDFUI(ctk.CTkToplevel):
             command=self.select_file
         ).pack(side="left", padx=10)
 
-        options_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        options_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         options_frame.pack(pady=10, padx=20, fill="x")
         
         self.header_var = ctk.BooleanVar(value=True)
@@ -102,13 +96,13 @@ class GeneratePDFUI(ctk.CTkToplevel):
             command=self.select_logo
         ).pack(side="right", padx=10)
 
-        answer_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        answer_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         answer_frame.pack(pady=10, padx=20, fill="x")
         ctk.CTkLabel(answer_frame, text="Include Answers:").pack(side="left", padx=10)
         ctk.CTkRadioButton(answer_frame, text="Yes", variable=self.answer_checked, value="Yes").pack(side="left", padx=10)
         ctk.CTkRadioButton(answer_frame, text="No", variable=self.answer_checked, value="No").pack(side="left", padx=10)
 
-        btn_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        btn_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         btn_frame.pack(pady=20)
         
         ctk.CTkButton(
@@ -195,20 +189,24 @@ class GeneratePDFUI(ctk.CTkToplevel):
     def generate_pdf(self, password):
         """Generate the PDF based on user selections."""
         try:
+            subject_code = self.subject_combo.get()
+            selected_subject = self.subject_db.get(subject_code, {})
+
             subject_details = {
                 'subject_code': self.subject_combo.get(),
                 'subject_name': self.detail_labels['subject_name'].cget("text"),
-                'subject_date': self.subject_date_picker.get_date(),
+                'subject_date': self.subject_date_picker.get_date().strftime("%Y-%m-%d"),
                 'time_duration': self.detail_labels['time_duration'].cget("text"),
-                'total_marks': self.calculate_total_marks()
+                'total_marks': self.calculate_total_marks(),
+                'instructions': selected_subject.get("instructions", [])
             }
 
             generator = GeneratePDF(
                 title=self.detail_labels['subject_name'].cget("text"),
                 subject_details=subject_details,
-                instructions="", 
+                instructions=subject_details['instructions'], 
                 questions=self.parsed_questions,
-                enrollment_no="", 
+                enrollment_no="______", 
                 logo_path=self.logo_path,
                 include_header=self.header_var.get(),
                 include_footer=self.footer_var.get(),
@@ -231,7 +229,7 @@ class GeneratePDFUI(ctk.CTkToplevel):
         if messagebox.askyesno("PDF Generated", "PDF generated successfully! Do you want to preview it?"):
             self.open_pdf(file_path)
         
-        self.destroy()
+        self.parent.redirect("home-page")
 
     def open_pdf(self, file_path):
         if os.name == 'nt':
@@ -268,5 +266,4 @@ class GeneratePDFUI(ctk.CTkToplevel):
         return kdf.derive(password.encode())
 
     def calculate_total_marks(self):
-        """Calculate the total marks from the parsed questions."""
         return sum(int(q['marks']) for q in self.parsed_questions)

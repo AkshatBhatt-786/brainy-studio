@@ -9,7 +9,10 @@ class GeneratePDF:
     def __init__(self, title, subject_details, instructions, questions, enrollment_no, logo_path, include_header=True, include_footer=True, show_answers=False):
         self.title = title
         self.subject_details = subject_details
-        self.instructions = subject_details.get('instructions', "")
+        if isinstance(instructions, list):
+            self.instructions = "\n".join(instructions)
+        else:
+            self.instructions = instructions.strip()
         self.questions = questions
         self.enrollment_no = enrollment_no
         self.logo_path = logo_path
@@ -40,6 +43,7 @@ class GeneratePDF:
         page_height = height - 150
         used_height = 0
         default_questions_per_page = 4
+        first_page_limit = 3  # Limit first page to 3 MCQs
 
         if self.include_header:
             pdf.setFont("Helvetica-Bold", 24)
@@ -59,11 +63,12 @@ class GeneratePDF:
         pdf.drawString(50, y_position, "Instructions:")
         y_position -= 15
         pdf.setFont("Helvetica", 10)
-        for line in self.instructions.splitlines():
-            pdf.drawString(50, y_position, line)
-            y_position -= 15
-
-
+        instruction_lines = self.instructions.split('\n')
+        for line in instruction_lines:
+            wrapped_lines = wrap(line, width=100)
+            for wrapped_line in wrapped_lines:
+                pdf.drawString(50, y_position, wrapped_line)
+                y_position -= 15
         y_position -= 10
         pdf.setLineWidth(1)
         pdf.line(50, y_position, width - 50, y_position)
@@ -77,7 +82,7 @@ class GeneratePDF:
             options_height = len(options_list) * 25 if options_list else 20
             total_height = question_height + options_height + 40
 
-            if question_count >= default_questions_per_page and used_height + total_height > page_height:
+            if (page_num == 1 and question_count >= first_page_limit) or (page_num > 1 and question_count >= default_questions_per_page and used_height + total_height > page_height):
                 self.add_footer(pdf, page_num, width)
                 pdf.showPage()
                 page_num += 1

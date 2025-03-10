@@ -120,12 +120,13 @@ class GeneratePDF:
                     option_y -= 25
             elif question['type'] in ['One Word', 'True/False']:
                 pdf.setFont("Helvetica-Oblique", 11)
-                pdf.drawString(50, option_y, f"Answer: {question.get('correct', 'N/A')}")
-                option_y -= 20
-                pdf.setFont("Helvetica", 11)
-
+                if self.show_answers and 'correct' in question:
+                    pdf.drawString(50, option_y, f"Answer: {question.get('correct', 'N/A')}")
+                    option_y -= 20
+                    
+            pdf.setFont("Helvetica", 11)        
             y_position = option_y - 20
-            used_height += total_height
+            used_height += total_height        
             question_count += 1
 
         self.add_footer(pdf, page_num, width)

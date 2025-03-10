@@ -1,7 +1,9 @@
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from tkcalendar import DateEntry
-from utils import centerWindow, getPath
+from utils import getPath
+from PIL import Image
+from ui_components import Colors, PrimaryButton
 from create_paper import PasswordDialog
 from pdf_template import GeneratePDF 
 import json
@@ -24,7 +26,7 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.configure(fg_color="#0F172A")
         self.subject_db = subject_db
         self.parsed_questions = []
-        self.logo_path = ""
+        self.logo_path = getPath(r"assets\images\logo.png")
         self.answer_checked = ctk.StringVar(value="No")
         self.main_frame = ctk.CTkFrame(container, fg_color="#1E293B", corner_radius=12)
         self.main_frame.pack(fill="both", expand=True, padx=10, pady=10)
@@ -41,9 +43,16 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.subject_combo = ctk.CTkComboBox(
             header_frame,
             values=list(self.subject_db.keys()),
+            fg_color=Colors.Inputs.BACKGROUND,
+            text_color=Colors.Inputs.TEXT,
+            border_color=Colors.Inputs.BORDER,
+            dropdown_fg_color=Colors.SECONDARY,
+            dropdown_hover_color=Colors.HIGHLIGHT,
+            dropdown_text_color=Colors.Inputs.TEXT,
             command=self.update_subject_details
         )
         self.subject_combo.pack(side="left", padx=5)
+        self.subject_combo.set("---SELECT---")
         
         self.detail_labels = {}
         details_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
@@ -67,10 +76,12 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.file_entry = ctk.CTkEntry(file_frame, placeholder_text="Select encrypted paper file")
         self.file_entry.pack(side="left", padx=10, pady=10, fill="x", expand=True)
         
-        ctk.CTkButton(
-            file_frame, 
+        PrimaryButton(
+            master=file_frame, 
             text="Browse", 
-            command=self.select_file
+            command=self.select_file,
+            width=180,
+            height=32
         ).pack(side="left", padx=10)
 
         options_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
@@ -89,12 +100,6 @@ class GeneratePDFUI(ctk.CTkFrame):
             text="Include Footer", 
             variable=self.footer_var
         ).pack(side="left", padx=10)
-        
-        ctk.CTkButton(
-            options_frame, 
-            text="Select Logo", 
-            command=self.select_logo
-        ).pack(side="right", padx=10)
 
         answer_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         answer_frame.pack(pady=10, padx=20, fill="x")
@@ -105,17 +110,9 @@ class GeneratePDFUI(ctk.CTkFrame):
         btn_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         btn_frame.pack(pady=20)
         
-        ctk.CTkButton(
-            btn_frame,
-            text="Preview PDF",
-            fg_color="#3B82F6",
-            command=self.preview_pdf
-        ).pack(side="left", padx=10)
-        
-        ctk.CTkButton(
-            btn_frame,
+        PrimaryButton(
+            master=btn_frame,
             text="Generate PDF",
-            fg_color="#10B981",
             command=self.initiate_generation
         ).pack(side="left", padx=10)
     
@@ -131,17 +128,7 @@ class GeneratePDFUI(ctk.CTkFrame):
             self.file_entry.insert(0, file_path)
             self.decrypt_file(file_path)
 
-    def select_logo(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.png *.jpg *.jpeg")])
-        if file_path:
-            self.logo_path = file_path
-            messagebox.showinfo("Logo Selected", "Logo has been successfully selected.")
-
-    def preview_pdf(self):
-        messagebox.showinfo("Preview PDF", "PDF preview functionality is not yet implemented.")
-
     def initiate_generation(self):
-        """Validates inputs and starts PDF generation."""
         if not self.validate_inputs():
             return
 
@@ -152,7 +139,6 @@ class GeneratePDFUI(ctk.CTkFrame):
             self.generate_pdf(pass_dialog.password)
 
     def validate_inputs(self):
-        """Check if subject and file are selected."""
         if not self.subject_combo.get():
             messagebox.showerror("Error", "Please select a subject code!")
             return False
@@ -161,12 +147,8 @@ class GeneratePDFUI(ctk.CTkFrame):
             return False
         return True
 
-    def on_close(self):
-        """Handles window close event."""
-        self.destroy()
 
     def decrypt_file(self, file_path):
-        """Decrypt the selected file and parse the questions."""
         pass_dialog = PasswordDialog(self, mode="decrypt")
         self.wait_window(pass_dialog)
 
@@ -187,7 +169,6 @@ class GeneratePDFUI(ctk.CTkFrame):
                 messagebox.showerror("Error", f"Decryption failed: {str(e)}")
 
     def generate_pdf(self, password):
-        """Generate the PDF based on user selections."""
         try:
             subject_code = self.subject_combo.get()
             selected_subject = self.subject_db.get(subject_code, {})

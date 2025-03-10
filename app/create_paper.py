@@ -160,7 +160,7 @@ class QuestionFrame(ctk.CTkFrame):
         self.meta_frame.grid(row=0, column=0, sticky="ew")
         self.meta_frame.grid_columnconfigure((0,1,2,3), weight=1)
 
-        self.type_combobox = ctk.CTkComboBox(self.meta_frame, values=["MCQ", "True/False", "One Word"], command=self.update_question_type, width=120, fg_color=Colors.Buttons.PRIMARY, border_color=Colors.Buttons.PRIMARY_HOVER)
+        self.type_combobox = ctk.CTkComboBox(self.meta_frame, values=["MCQ", "True/False", "One Word"], command=self.update_question_type, width=120, fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER, dropdown_fg_color=Colors.Inputs.BACKGROUND, dropdown_hover_color=Colors.HIGHLIGHT, text_color=Colors.Inputs.TEXT)
         self.type_combobox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
         self.tag_label = ctk.CTkLabel(self.meta_frame, text="Tag", text_color=Colors.Inputs.TEXT)

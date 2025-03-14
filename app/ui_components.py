@@ -101,14 +101,32 @@ class ErrorButton(ctk.CTkButton):
                          border_width=2, hover_color="#FFC080", cursor="hand2", **kwargs)
 
 
-class NavigationBtn(ctk.CTkButton):
+class IconButton(ctk.CTkButton):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, width=20, height=20,
+            cursor="hand2", fg_color="transparent",
+            text_color=Colors.Texts.BORDER,
+            hover_color=Colors.SECONDARY,
+            corner_radius=18,
+            text="", **kwargs)
+        
+class SidebarButton(ctk.CTkButton):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, font=("Calibri", 16, "bold"),
+            hover_color=Colors.PRIMARY,
+            fg_color=Colors.PRIMARY,
+            width=20, corner_radius=12, height=38,
+            text_color=Colors.Texts.BORDER,
+            cursor="hand2", **kwargs)
+
+class LinkButton(ctk.CTkButton):
 
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
 
         self.configure(
-            fg_color="#8E44AD",
-            hover_color="#8E44AD",
+            fg_color="#1E293B",
+            hover_color="#1E293B",
             width=35, height=35,
             text_color="#FFFFFF",
             cursor="hand2",
@@ -123,22 +141,6 @@ class NavigationBtn(ctk.CTkButton):
     
     def on_leave(self, event):
         self.configure(text_color="#FFFFFF")
-
-class SidebarButton(ctk.CTkButton):
-    def __init__(self, master, text, **kwargs):
-        super().__init__(
-            master,
-            text=text,
-            fg_color=Colors.Sidebar.BACKGROUND,
-            hover_color=Colors.Sidebar.HOVER,
-            corner_radius=10,
-            width=180,
-            height=40,
-            text_color=Colors.Texts.HEADERS,
-            cursor="hand2",
-            font=("Inter", 14, "bold"),
-            **kwargs
-        )
 
 class CustomLabel(ctk.CTkLabel):
     def __init__(self, master=None, default_color=None, hover_color=None, **kwargs):

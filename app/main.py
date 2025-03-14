@@ -20,7 +20,7 @@ from watchdog.events import FileSystemEventHandler
 import threading
 import customtkinter as ctk
 from utils import getPath, centerWindow
-from ui_components import Colors
+from ui_components import Colors, IconButton, SidebarButton
 from PIL import Image
 import time
 import os
@@ -28,6 +28,7 @@ import datetime
 from users import UserManager, AuthView
 from create_paper import CreatePaper
 from generate_pdf import GeneratePDFUI
+from cloud_dashboard import CloudDashboard
 
 # ^ Temporary for testing purpose
 subject_db = {  
@@ -90,7 +91,19 @@ subject_db = {
             "4. Answer all questions within the given time limit. No extra time will be provided.",  
             "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
         ]  
-    }  
+    },
+    "BE06": {
+        "subject_name": "Environmental and Sustainbility",  
+        "subject_date": "-",  
+        "time_duration": "-",  
+        "instructions": [  
+            "1. Stable Internet Required: Ensure a good connection.",  
+            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
+            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
+            "4. Answer all questions within the given time limit. No extra time will be provided.",  
+            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
+        ]  
+    }
 }
 
 
@@ -143,7 +156,7 @@ class BrainyStudioApp(ctk.CTk):
         super().__init__()
         self.title("Brainy Studio v1.0.2 (Beta)")
         self.minsize(700, 600)
-        self.geometry(centerWindow(self, 1150, 600, self._get_window_scaling()))
+        self.geometry(centerWindow(self, 1150, 720, self._get_window_scaling(), (0, 130)))
         self.iconbitmap(bitmap=getPath("assets\\icons\\icon.ico"))
         self.content_frame = None
         self.user_manager = UserManager()
@@ -163,6 +176,8 @@ class BrainyStudioApp(ctk.CTk):
         self.main_content = ctk.CTkFrame(
             master=self,
             fg_color=Colors.PRIMARY,
+            # scrollbar_button_color=Colors.BACKGROUND,
+            # scrollbar_button_hover_color=Colors.HIGHLIGHT,
             corner_radius=15,
             border_width=0,
             border_color=Colors.Texts.BORDER
@@ -220,18 +235,21 @@ class BrainyStudioApp(ctk.CTk):
         self.action_grid.pack(padx=20, pady=10, expand=True, fill="both")
         self.action_grid.columnconfigure((0, 1, 2), weight=1, uniform="a")
 
-        self._create_action_card("Create Paper", "assets\\images\\create-paper.png", 0, lambda: self.redirect_to_create_paper_page())
-        self._create_action_card("Edit Paper", "assets\\images\\edit.png", 1, lambda: self.redirect("edit-page"))
-        self._create_action_card("Export Paper", "assets\\images\\export.png", 2, lambda: self.redirect_to_export_page())
+        self._create_action_card("Create Paper", "assets\\images\\create-paper.png", 0, 0, lambda: self.redirect_to_create_paper_page())
+        self._create_action_card("Edit Paper", "assets\\images\\edit.png", 0, 1, lambda: self.redirect("edit-page"))
+        self._create_action_card("Export To PDF", "assets\\images\\pdf.png", 1, 0, lambda: self.redirect_to_export_page())
+        self._create_action_card("Cloud Dashboard", "assets\\images\\cloud-computing.png", 0, 2, lambda: self.redirect("cloud-dashboard"))
+        self._create_action_card("Configure Database", "assets\\images\\server.png", 1, 1, None)
+        self._create_action_card("Export to Excel", "assets\\images\\excel.png", 1, 2, None)
 
-        self.recent_projects_frame = ctk.CTkFrame(self.main_content, fg_color=Colors.SECONDARY, corner_radius=10)
-        self.recent_projects_frame.pack(padx=20, pady=10, expand=True, fill="both")
-        self.recent_projects_frame.grid_propagate(flag=False)
-        self.load_recent_projects()
+        # self.recent_projects_frame = ctk.CTkScrollableFrame(self.main_content, fg_color=Colors.SECONDARY, corner_radius=10)
+        # self.recent_projects_frame.pack(padx=20, pady=10, expand=True, fill="both")
+        # self.recent_projects_frame.grid_propagate(flag=False)
+        # self.load_recent_projects()
 
         self.footer_label = ctk.CTkLabel(
             master=self.main_content,
-            text="Brainy Studio v1.0",
+            text="Brainy Studio v1.2.0 (beta)",
             font=("Arial", 12),
             text_color=Colors.Footer.TEXT
         )
@@ -295,17 +313,54 @@ class BrainyStudioApp(ctk.CTk):
         )
         self.logo.grid(row=1, column=0, pady=10, padx=10, sticky="nsew")
 
-        self.home_redirect_link_btn = ctk.CTkButton(
+        self.home_redirect_link_btn = SidebarButton(
             master=self.name_frame,
             text="Home",
-            font=("Calibri", 16, "bold"),
-            hover_color=Colors.PRIMARY,
-            fg_color=Colors.PRIMARY,
-            width=120, corner_radius=12, height=38,
-            text_color=Colors.Texts.BORDER,
-            cursor="hand2"
+            command=lambda: self.redirect_to_home_page()
         )
         self.home_redirect_link_btn.grid(row=2, column=0, pady=10, sticky="w")
+
+        self.create_paper_name_btn = SidebarButton(
+            master=self.name_frame,
+            text="Create Paper",
+            command=lambda: self.redirect_to_create_paper_page()
+        )
+        self.create_paper_name_btn.grid(row=3, column=0, pady=10, sticky="w")
+
+        self.edit_paper_name_btn = SidebarButton(
+            master=self.name_frame,
+            text="Edit Paper",
+            command=lambda: self.redirect_to_edit_paper_page()
+        )
+        self.edit_paper_name_btn.grid(row=4, column=0, pady=10, sticky="w")
+
+        self.cloud_dashboard_name_btn= SidebarButton(
+            master=self.name_frame,
+            text="Cloud Dashboard",
+            command=lambda: self.redirect("cloud-dashboard")
+        )
+        self.cloud_dashboard_name_btn.grid(row=5, column=0, pady=10, sticky="w")
+
+        self.export_to_pdf_name_btn = SidebarButton(
+            master=self.name_frame,
+            text="Generate PDF",
+            command=lambda: self.redirect_to_export_page()
+        )
+        self.export_to_pdf_name_btn.grid(row=6, column=0, pady=10, sticky="w")
+
+        self.export_to_excel_name_btn = SidebarButton(
+            master=self.name_frame,
+            text="Generate EXCEL",
+            command=None
+        )
+        self.export_to_excel_name_btn.grid(row=7, column=0, pady=10, sticky="w")
+
+        self.configure_database_name_btn = SidebarButton(
+            master=self.name_frame,
+            text="Configure Database",
+            command=None
+        )
+        self.configure_database_name_btn.grid(row=8, column=0, pady=10, sticky="w")
 
     def _create_icon_frame(self):
         self.icon_frame = ctk.CTkScrollableFrame(
@@ -336,19 +391,54 @@ class BrainyStudioApp(ctk.CTk):
         )
         self.toggle_btn.grid(row=0, column=0, pady=20, padx=5, sticky="nsew")
 
-        self.home_btn = ctk.CTkButton(
+        self.home_btn = IconButton(
             self.icon_frame,
-            fg_color="transparent",
-            text_color=Colors.Texts.BORDER,
-            hover_color=Colors.SECONDARY,
-            corner_radius=18,
-            text="",
             image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\home.png")), size=(30, 30)),
-            width=20, height=20,
-            cursor="hand2",
             command=lambda: self.redirect_to_home_page()
         )
         self.home_btn.grid(row=1, column=0, pady=20, padx=5, sticky="nsew")
+
+        self.create_paper_btn = IconButton(
+            self.icon_frame,
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\create-paper.png")), size=(30, 30)),
+            command=lambda: self.redirect_to_create_paper_page()
+        )
+        self.create_paper_btn.grid(row=2, column=0, pady=20, padx=5, sticky="nsew")
+
+        self.edit_paper_btn = IconButton(
+            self.icon_frame,
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\edit.png")), size=(30, 30)),
+            command=lambda: self.redirect_to_edit_paper_page()
+        )
+        self.edit_paper_btn.grid(row=3, column=0, pady=20, padx=5, sticky="nsew")
+
+        self.cloud_dashboard_btn = IconButton(
+            self.icon_frame,
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\cloud-computing.png")), size=(30, 30)),
+            command=lambda: self.redirect("cloud-dashboard")
+        )
+        self.cloud_dashboard_btn.grid(row=4, column=0, pady=20, padx=5, sticky="nsew")
+
+        self.export_to_pdf_btn = IconButton(
+            self.icon_frame,
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\pdf.png")), size=(30, 30)),
+            command=lambda: self.redirect_to_export_page()
+        )
+        self.export_to_pdf_btn.grid(row=5, column=0, pady=20, padx=5, sticky="nsew")
+
+        self.export_to_excel_btn = IconButton(
+            self.icon_frame,
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\excel.png")), size=(30, 30)),
+            command=None
+        )
+        self.export_to_excel_btn.grid(row=6, column=0, pady=20, padx=5, sticky="nsew")
+
+        self.configure_database_btn = IconButton(
+            self.icon_frame,
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\server.png")), size=(30, 30))
+            # command=lambda: self.configure_database()
+        )
+        self.configure_database_btn.grid(row=7, column=0, pady=20, padx=5, sticky="nsew")
 
     def load_recent_projects(self):
         workspace_path = self.user_manager.user[3]
@@ -406,7 +496,7 @@ class BrainyStudioApp(ctk.CTk):
                 )
                 file_button.pack(fill="x", padx=10, pady=5)
 
-    def _create_action_card(self, text, image_path, column, callback):
+    def _create_action_card(self, text, image_path, row, column, callback):
         card = ctk.CTkFrame(
             master=self.action_grid,
             fg_color=Colors.Cards.BACKGROUND,
@@ -414,7 +504,7 @@ class BrainyStudioApp(ctk.CTk):
             border_width=2,
             border_color=Colors.Cards.BORDER
         )
-        card.grid(row=0, column=column, padx=10, pady=10, sticky="nsew")
+        card.grid(row=row, column=column, padx=10, pady=10, sticky="nsew")
         card.columnconfigure(0, weight=1)
 
         icon = ctk.CTkLabel(
@@ -472,10 +562,12 @@ class BrainyStudioApp(ctk.CTk):
         if page_name == "create-paper":
             if self.edit_page:
                 self.edit_page.pack_forget()
+            self.title("Create Paper")
             self.create_paper = CreatePaper(self.main_content, parent=self)
             self.create_paper.pack(padx=10, pady=10, anchor="center")
 
         if page_name == "home-page":
+            self.title("Brainy Studio v1.0.2 (Beta)")
             if self.create_paper is not None:
                 self.create_paper.pack_forget()
             self.build()
@@ -483,8 +575,13 @@ class BrainyStudioApp(ctk.CTk):
         if page_name == "edit-page":
             if self.create_paper:
                 self.create_paper.pack_forget()
+            self.title("Edit Paper")
             self.edit_page = CreatePaper(self.main_content, edit_mode=True, parent=self, file_path=filepath)
             self.edit_page.pack(padx=10, pady=10, anchor="center")
+
+        if page_name == "cloud-dashboard":
+            self.title("Cloud Dashboard")
+            self.cloud_page = CloudDashboard(self.main_content, parent=self)
 
         if page_name == "export-page":
             self.export_page = GeneratePDFUI(self, subject_db, self, self.main_content)

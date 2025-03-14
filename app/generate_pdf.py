@@ -3,7 +3,7 @@ from tkinter import messagebox, filedialog
 from tkcalendar import DateEntry
 from utils import getPath
 from PIL import Image
-from ui_components import Colors, PrimaryButton
+from ui_components import Colors, PrimaryButton, LinkButton
 from create_paper import PasswordDialog
 from pdf_template import GeneratePDF 
 import json
@@ -38,6 +38,8 @@ class GeneratePDFUI(ctk.CTkFrame):
 
         header_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         header_frame.pack(pady=10, padx=20, fill="x")
+
+        ctk.CTkLabel(header_frame, text="Generate Your Questions to PDF Format!", font=("Arial", 21, "bold")).pack(padx=10, pady=10)
         
         ctk.CTkLabel(header_frame, text="Subject Code:").pack(side="left", padx=5)
         self.subject_combo = ctk.CTkComboBox(
@@ -53,12 +55,14 @@ class GeneratePDFUI(ctk.CTkFrame):
         )
         self.subject_combo.pack(side="left", padx=5)
         self.subject_combo.set("---SELECT---")
+
+        LinkButton(header_frame, text="Don't see your subject? Create one!").pack(side="left", padx=10)
         
         self.detail_labels = {}
         details_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
         details_frame.pack(side="left", padx=20)
         
-        ctk.CTkLabel(details_frame, text="Subject Name:").grid(row=0, column=0, padx=5, pady=2)
+        ctk.CTkLabel(details_frame, text="Subject Name:", font=("Arial", 16, "bold")).grid(row=0, column=0, padx=5, pady=2)
         self.detail_labels['subject_name'] = ctk.CTkLabel(details_frame, text="")
         self.detail_labels['subject_name'].grid(row=0, column=1, padx=5, pady=2)
         
@@ -66,9 +70,21 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.subject_date_picker = DateEntry(details_frame, date_pattern='yyyy-mm-dd', mindate=datetime.date.today() + datetime.timedelta(days=1))
         self.subject_date_picker.grid(row=1, column=1, padx=5, pady=2)
         
-        ctk.CTkLabel(details_frame, text="Duration:").grid(row=2, column=0, padx=5, pady=2)
-        self.detail_labels['time_duration'] = ctk.CTkLabel(details_frame, text="")
-        self.detail_labels['time_duration'].grid(row=2, column=1, padx=5, pady=2)
+        ctk.CTkLabel(details_frame, text="Duration (min):").grid(row=2, column=0, padx=5, pady=2)
+
+        self.time_duration_label = ctk.CTkLabel(details_frame, text="5.0 min per question.")  
+        self.time_duration_label.grid(row=2, column=2, padx=5, pady=2)
+
+        # Create Slider for 1 - 10 min (step size 0.5)
+        self.time_duration_slider = ctk.CTkSlider(
+            details_frame,
+            from_=1,
+            to=10,   
+            number_of_steps=18,
+            command=self.update_time_label, 
+        )
+        self.time_duration_slider.set(5.0) 
+        self.time_duration_slider.grid(row=2, column=1, padx=5, pady=2, sticky="ew")
 
         file_frame = ctk.CTkFrame(self.main_frame, fg_color="#334155", corner_radius=8)
         file_frame.pack(pady=10, padx=20, fill="x")
@@ -119,8 +135,13 @@ class GeneratePDFUI(ctk.CTkFrame):
     def update_subject_details(self, choice):
         details = self.subject_db.get(choice, {})
         self.detail_labels['subject_name'].configure(text=details.get("subject_name", ""))
-        self.detail_labels['time_duration'].configure(text=details.get("time_duration", ""))
-    
+        
+        self.time_duration_slider.set(5.0)
+        self.update_time_label(5.0)
+
+    def update_time_label(self, value):
+        self.time_duration_label.configure(text=f"{round(value, 1)} min")
+
     def select_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Encrypted Files", "*.enc")])
         if file_path:
@@ -131,12 +152,8 @@ class GeneratePDFUI(ctk.CTkFrame):
     def initiate_generation(self):
         if not self.validate_inputs():
             return
-
-        pass_dialog = PasswordDialog(self, mode="set_password")
-        self.wait_window(pass_dialog)
-
-        if pass_dialog.password:
-            self.generate_pdf(pass_dialog.password)
+        
+        self.generate_pdf()
 
     def validate_inputs(self):
         if not self.subject_combo.get():
@@ -168,8 +185,9 @@ class GeneratePDFUI(ctk.CTkFrame):
             except Exception as e:
                 messagebox.showerror("Error", f"Decryption failed: {str(e)}")
 
-    def generate_pdf(self, password):
+    def generate_pdf(self):
         try:
+            total_duration = round(self.time_duration_slider.get() * len(self.parsed_questions), 1)
             subject_code = self.subject_combo.get()
             selected_subject = self.subject_db.get(subject_code, {})
 
@@ -177,7 +195,7 @@ class GeneratePDFUI(ctk.CTkFrame):
                 'subject_code': self.subject_combo.get(),
                 'subject_name': self.detail_labels['subject_name'].cget("text"),
                 'subject_date': self.subject_date_picker.get_date().strftime("%Y-%m-%d"),
-                'time_duration': self.detail_labels['time_duration'].cget("text"),
+                'time_duration': f"{total_duration} minutes",
                 'total_marks': self.calculate_total_marks(),
                 'instructions': selected_subject.get("instructions", [])
             }
@@ -205,6 +223,16 @@ class GeneratePDFUI(ctk.CTkFrame):
 
         except Exception as e:
             messagebox.showerror("Error", f"Generation failed: {str(e)}")
+
+    def calculate_auto_duration(self, choice):
+        try:
+            total_questions = len(self.parsed_questions)
+            minutes_per_question = int(choice)
+            total_duration = total_questions * minutes_per_question
+            self.final_duration_label.configure(text=f"Final: {total_duration} minutes")
+        except ValueError:
+            self.final_duration_label.configure(text="Final: -- minutes")
+
 
     def show_popup(self, file_path):
         if messagebox.askyesno("PDF Generated", "PDF generated successfully! Do you want to preview it?"):

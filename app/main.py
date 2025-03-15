@@ -29,84 +29,9 @@ from users import UserManager, AuthView
 from create_paper import CreatePaper
 from generate_pdf import GeneratePDFUI
 from cloud_dashboard import CloudDashboard
+from subject_db import SubjectDBManager
 
-# ^ Temporary for testing purpose
-subject_db = {  
-    "BE02": {  
-        "subject_name": "Engineering Mathematics",  
-        "subject_date": "-",  
-        "time_duration": "-",  
-        "instructions": [  
-            "1. Stable Internet Required: Ensure a good connection.",  
-            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
-            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
-            "4. Answer all questions within the given time limit. No extra time will be provided.",  
-            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
-        ]  
-    },  
-    "BE01": {  
-        "subject_name": "English [Soft Skills]",  
-        "subject_date": "-",  
-        "time_duration": "-",  
-        "instructions": [  
-            "1. Stable Internet Required: Ensure a good connection.",  
-            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
-            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
-            "4. Answer all questions within the given time limit. No extra time will be provided.",  
-            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
-        ]  
-    },  
-    "BE03": {  
-        "subject_name": "Applied Physics",  
-        "subject_date": "-",  
-        "time_duration": "-",  
-        "instructions": [  
-            "1. Stable Internet Required: Ensure a good connection.",  
-            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
-            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
-            "4. Answer all questions within the given time limit. No extra time will be provided.",  
-            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
-        ]  
-    },  
-    "BE04": {  
-        "subject_name": "Organic Chemistry",  
-        "subject_date": "-",  
-        "time_duration": "-",  
-        "instructions": [  
-            "1. Stable Internet Required: Ensure a good connection.",  
-            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
-            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
-            "4. Answer all questions within the given time limit. No extra time will be provided.",  
-            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
-        ]  
-    },  
-    "BE05": {  
-        "subject_name": "Basics of Computer Science",  
-        "subject_date": "-",  
-        "time_duration": "-",  
-        "instructions": [  
-            "1. Stable Internet Required: Ensure a good connection.",  
-            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
-            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
-            "4. Answer all questions within the given time limit. No extra time will be provided.",  
-            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
-        ]  
-    },
-    "BE06": {
-        "subject_name": "Environmental and Sustainbility",  
-        "subject_date": "-",  
-        "time_duration": "-",  
-        "instructions": [  
-            "1. Stable Internet Required: Ensure a good connection.",  
-            "2. Use Allowed Devices: Only a laptop/PC; no mobile phones or smartwatches.",  
-            "3. No Switching Tabs: Changing windows may lead to disqualification.",  
-            "4. Answer all questions within the given time limit. No extra time will be provided.",  
-            "5. Submit the exam before the deadline, as responses will not be accepted afterward."  
-        ]  
-    }
-}
-
-
+subject_db = SubjectDBManager()
 
 class WorkspaceEventHandler(FileSystemEventHandler):
     def __init__(self, app, observer):

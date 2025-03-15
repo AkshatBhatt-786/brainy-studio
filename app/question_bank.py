@@ -14,7 +14,7 @@ class QuestionBank(ctk.CTkToplevel):
         self.parent = parent
         self.attributes("-topmost", True)
         self.title("Question Bank")
-        self.geometry(centerWindow(master, 900, 600, self._get_window_scaling()))
+        self.geometry(centerWindow(master, 900, 500, self._get_window_scaling()))
         self.configure(fg_color="#0F172A")
         self.question_data = None
         self.lift()
@@ -40,19 +40,20 @@ class QuestionBank(ctk.CTkToplevel):
         style = ttk.Style()
         style.configure("Treeview",
                         background="#1E293B",
-                        foreground="white",
+                        foreground="#FFFFFF",
                         rowheight=30,
                         fieldbackground="#1E293B")
         style.configure("Treeview.Heading",
                         background="#1E293B",
-                        foreground="white",
+                        foreground="#333333",
+                        fg_color="#1E293B",
                         font=("Arial", 14, "bold"))
         
         self.tree = ttk.Treeview(self.scroll_frame, 
                          columns=("Question ID", "Question", "Tags", "Marks", "Options", "Question Type", "Answer"), 
                          show="headings", selectmode="extended")
 
-        self.tree.heading("Question ID", text="Question ID", anchor="center")
+        self.tree.heading("Question ID", text="ID", anchor="center")
         self.tree.heading("Question", text="Question", anchor="w")
         self.tree.heading("Tags", text="Tags", anchor="center")
         self.tree.heading("Marks", text="Marks", anchor="center")
@@ -78,7 +79,9 @@ class QuestionBank(ctk.CTkToplevel):
         self.load_questions()
 
     def import_excel(self):
+        self.attributes("-topmost", False)
         file_path = filedialog.askopenfilename(filetypes=[("Excel Files", "*.xlsx")])
+        self.attributes("-topmost", True)
 
         if file_path:
             try:
@@ -145,6 +148,5 @@ class QuestionBank(ctk.CTkToplevel):
             messagebox.showwarning("No Selection", "Please select at least one question.")
             return
 
-        print(selected_questions)  # Debugging: See selected data
         self.parent.add_questions_from_bank(selected_questions)
         self.destroy()

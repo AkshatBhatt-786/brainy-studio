@@ -1,3 +1,8 @@
+import json
+import base64
+import sys
+import os
+import subprocess
 import customtkinter as ctk
 from tkinter import messagebox, filedialog
 from tkcalendar import DateEntry
@@ -6,17 +11,13 @@ from PIL import Image
 from ui_components import Colors, PrimaryButton, LinkButton
 from create_paper import PasswordDialog
 from pdf_template import GeneratePDF 
-import json
-import base64
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
 import datetime
-import sys
-import os
-import subprocess
+from subject_db import SubjectManagerUI
 
 class GeneratePDFUI(ctk.CTkFrame):
     def __init__(self, master, subject_db, parent, container):
@@ -24,7 +25,7 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.parent = parent
         self.parent.title("Export to PDF")
         self.configure(fg_color="#0F172A")
-        self.subject_db = subject_db
+        self.db_manager = subject_db
         self.parsed_questions = []
         self.logo_path = getPath(r"assets\images\logo.png")
         self.answer_checked = ctk.StringVar(value="No")
@@ -44,7 +45,7 @@ class GeneratePDFUI(ctk.CTkFrame):
         ctk.CTkLabel(header_frame, text="Subject Code:").pack(side="left", padx=5)
         self.subject_combo = ctk.CTkComboBox(
             header_frame,
-            values=list(self.subject_db.keys()),
+            values=self.get_subject_codes(),
             fg_color=Colors.Inputs.BACKGROUND,
             text_color=Colors.Inputs.TEXT,
             border_color=Colors.Inputs.BORDER,
@@ -56,7 +57,7 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.subject_combo.pack(side="left", padx=5)
         self.subject_combo.set("---SELECT---")
 
-        LinkButton(header_frame, text="Don't see your subject? Create one!").pack(side="left", padx=10)
+        LinkButton(header_frame, text="Edit Database!", command=lambda parent=self.parent: SubjectManagerUI(parent)).pack(side="left", padx=10)
         
         self.detail_labels = {}
         details_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
@@ -131,10 +132,20 @@ class GeneratePDFUI(ctk.CTkFrame):
             text="Generate PDF",
             command=self.initiate_generation
         ).pack(side="left", padx=10)
+
+    def get_subject_codes(self):
+        subjects = self.db_manager.fetch_data()
+        return [sub[0] for sub in subjects] 
+
     
     def update_subject_details(self, choice):
-        details = self.subject_db.get(choice, {})
-        self.detail_labels['subject_name'].configure(text=details.get("subject_name", ""))
+        subjects = self.db_manager.fetch_data()
+        details = next((sub for sub in subjects if sub[0] == choice), None)
+
+        if details:
+            self.detail_labels['subject_name'].configure(text=details[1])  # Subject Name
+        else:
+            self.detail_labels['subject_name'].configure(text="")
         
         self.time_duration_slider.set(5.0)
         self.update_time_label(5.0)

@@ -26,7 +26,6 @@ from PIL import Image
 import json
 import os
 import random
-from rich import print
 import string
 import base64
 import threading
@@ -648,7 +647,6 @@ class CreatePaper(ctk.CTkFrame):
             if isinstance(qf, QuestionFrame):
                 qf.destroy()
         self.question_frames = []
-        print(questions_data)
 
         for q_data in questions_data:
             qf = QuestionFrame(self.workspace)

@@ -1,91 +1,543 @@
 import customtkinter as ctk
 from tkinter import filedialog, messagebox
-import random
-import string
+from tkcalendar import DateEntry
 import json
 import datetime
+from ui_components import Colors, PrimaryButton
+from create_paper import PasswordDialog
+import customtkinter as ctk
+from math import floor
+from random import random
 import base64
+from utils import getPath
 import os
+from rich import print
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
-from ui_components import Colors, PrimaryButton
-from create_paper import PasswordDialog
+from dropbox_backend import DropboxBackend
+
+DBX_PATH = getPath("database\\dbx_backend.json")
 
 class TimePickerDialog(ctk.CTkToplevel):
-    def __init__(self, parent):
+    def __init__(self, parent, initial_time=None):
         super().__init__(parent)
-        self.title("Set Registration Time")
-        self.geometry("400x250")
+        self.title("Select Time")
+        self.geometry("380x280")
         self.resizable(False, False)
-        self.start_time = None
-        self.end_time = None
+        self.configure(fg_color=Colors.PRIMARY)
+        self.transient(parent)
+        self.grab_set()
         
-        self.create_widgets()
-    
-    def create_widgets(self):
-        time_frame = ctk.CTkFrame(self, fg_color=Colors.BACKGROUND)
-        time_frame.pack(padx=20, pady=20, fill="both", expand=True)
+        self.time_str = ""
+        self.hours = 12
+        self.minutes = 0
+        self.am_pm = "AM"
         
-        # Start Time
-        ctk.CTkLabel(time_frame, text="Start Time:", text_color=Colors.Texts.HEADERS).grid(row=0, column=0, padx=5, pady=5)
-        self.start_hour = ctk.CTkComboBox(time_frame, values=[f"{h:02d}" for h in range(1, 13)], width=60)
-        self.start_hour.grid(row=0, column=1, padx=5)
-        self.start_min = ctk.CTkComboBox(time_frame, values=[f"{m:02d}" for m in range(0, 60, 5)], width=60)
-        self.start_min.grid(row=0, column=2, padx=5)
-        self.start_ampm = ctk.CTkComboBox(time_frame, values=["AM", "PM"], width=60)
-        self.start_ampm.grid(row=0, column=3, padx=5)
+        if initial_time:
+            self._parse_initial_time(initial_time)
         
-        # End Time
-        ctk.CTkLabel(time_frame, text="End Time:", text_color=Colors.Texts.HEADERS).grid(row=1, column=0, padx=5, pady=5)
-        self.end_hour = ctk.CTkComboBox(time_frame, values=[f"{h:02d}" for h in range(1, 13)], width=60)
-        self.end_hour.grid(row=1, column=1, padx=5)
-        self.end_min = ctk.CTkComboBox(time_frame, values=[f"{m:02d}" for m in range(0, 60, 5)], width=60)
-        self.end_min.grid(row=1, column=2, padx=5)
-        self.end_ampm = ctk.CTkComboBox(time_frame, values=["AM", "PM"], width=60)
-        self.end_ampm.grid(row=1, column=3, padx=5)
-        
-        # Set default values
-        self.start_hour.set("09")
-        self.start_min.set("00")
-        self.start_ampm.set("AM")
-        self.end_hour.set("10")
-        self.end_min.set("00")
-        self.end_ampm.set("AM")
-        
-        # Buttons
-        btn_frame = ctk.CTkFrame(self, fg_color=Colors.BACKGROUND)
-        btn_frame.pack(pady=10)
-        
-        PrimaryButton(btn_frame, text="OK", command=self.set_times).pack(side="left", padx=10)
-        PrimaryButton(btn_frame, text="Cancel", command=self.destroy).pack(side="right", padx=10)
-    
-    def set_times(self):
+        self._create_widgets()
+        self._center_on_parent(parent)
+
+    def _parse_initial_time(self, time_str):
         try:
-            # Convert to 24-hour format
-            start = f"{self.start_hour.get()}:{self.start_min.get()} {self.start_ampm.get()}"
-            end = f"{self.end_hour.get()}:{self.end_min.get()} {self.end_ampm.get()}"
-            
-            self.start_time = datetime.datetime.strptime(start, "%I:%M %p").strftime("%H:%M")
-            self.end_time = datetime.datetime.strptime(end, "%I:%M %p").strftime("%H:%M")
-            self.destroy()
+            time_obj = datetime.strptime(time_str, "%I:%M %p")
+            self.hours = time_obj.hour % 12 or 12
+            self.minutes = time_obj.minute
+            self.am_pm = "AM" if time_obj.hour < 12 else "PM"
         except ValueError:
-            messagebox.showerror("Error", "Invalid time selection!")
+            pass
+
+    def _create_widgets(self):
+        # Main container
+        container = ctk.CTkFrame(self, fg_color=Colors.PRIMARY)
+        container.pack(padx=20, pady=20, fill="both", expand=True)
+
+        # Time display
+        time_frame = ctk.CTkFrame(container, fg_color=Colors.SECONDARY, corner_radius=8)
+        time_frame.pack(pady=10, fill="x")
+
+        # Hours controls
+        hours_frame = ctk.CTkFrame(time_frame, fg_color="transparent")
+        hours_frame.pack(side="left", expand=True, padx=10)
+
+        ctk.CTkButton(
+            hours_frame, 
+            text="↑", 
+            width=30, 
+            height=30,
+            command=lambda: self._update_time("hours", 1),
+            fg_color=Colors.Buttons.PRIMARY,
+            hover_color=Colors.Buttons.PRIMARY_HOVER,
+            font=("Arial", 16)
+        ).pack()
+
+        self.hours_label = ctk.CTkLabel(
+            hours_frame, 
+            text=f"{self.hours:02d}", 
+            font=("Arial", 32, "bold"), 
+            text_color=Colors.Texts.HEADERS
+        )
+        self.hours_label.pack(pady=5)
+
+        ctk.CTkButton(
+            hours_frame, 
+            text="↓", 
+            width=30, 
+            height=30,
+            command=lambda: self._update_time("hours", -1),
+            fg_color=Colors.Buttons.PRIMARY,
+            hover_color=Colors.Buttons.PRIMARY_HOVER,
+            font=("Arial", 16)
+        ).pack()
+
+        # Minutes controls
+        minutes_frame = ctk.CTkFrame(time_frame, fg_color="transparent")
+        minutes_frame.pack(side="left", expand=True, padx=10)
+
+        ctk.CTkButton(
+            minutes_frame, 
+            text="↑", 
+            width=30, 
+            height=30,
+            command=lambda: self._update_time("minutes", 1),
+            fg_color=Colors.Buttons.PRIMARY,
+            hover_color=Colors.Buttons.PRIMARY_HOVER,
+            font=("Arial", 16)
+        ).pack()
+
+        self.minutes_label = ctk.CTkLabel(
+            minutes_frame, 
+            text=f"{self.minutes:02d}", 
+            font=("Arial", 32, "bold"), 
+            text_color=Colors.Texts.HEADERS
+        )
+        self.minutes_label.pack(pady=5)
+
+        ctk.CTkButton(
+            minutes_frame, 
+            text="↓", 
+            width=30, 
+            height=30,
+            command=lambda: self._update_time("minutes", -1),
+            fg_color=Colors.Buttons.PRIMARY,
+            hover_color=Colors.Buttons.PRIMARY_HOVER,
+            font=("Arial", 16)
+        ).pack()
+
+        # AM/PM selector
+        self.am_pm_selector = ctk.CTkSegmentedButton(
+            container,
+            values=["AM", "PM"],
+            command=self._update_am_pm,
+            selected_color=Colors.ACCENT,
+            selected_hover_color=Colors.Buttons.PRIMARY_HOVER,
+            unselected_color=Colors.Inputs.BACKGROUND,
+            unselected_hover_color=Colors.Sidebar.HOVER,
+            font=("Arial", 14, "bold"),
+            text_color=Colors.Texts.HEADERS
+        )
+        self.am_pm_selector.pack(pady=10)
+        self.am_pm_selector.set(self.am_pm)
+
+        # Control buttons
+        button_frame = ctk.CTkFrame(container, fg_color="transparent")
+        button_frame.pack(pady=10)
+
+        ctk.CTkButton(
+            button_frame,
+            text="Cancel",
+            command=self.destroy,
+            fg_color=Colors.Buttons.SECONDARY,
+            hover_color=Colors.Buttons.SECONDARY_HOVER
+        ).pack(side="right", padx=5)
+
+        ctk.CTkButton(
+            button_frame,
+            text="OK",
+            command=self._ok,
+            fg_color=Colors.Buttons.PRIMARY,
+            hover_color=Colors.Buttons.PRIMARY_HOVER
+        ).pack(side="right", padx=5)
+
+    def _update_time(self, unit, delta):
+        if unit == "hours":
+            self.hours = (self.hours + delta - 1) % 12 + 1
+            self.hours_label.configure(text=f"{self.hours:02d}")
+        elif unit == "minutes":
+            self.minutes = (self.minutes + delta) % 60
+            self.minutes_label.configure(text=f"{self.minutes:02d}")
+
+    def _update_am_pm(self, value):
+        self.am_pm = value
+
+    def _ok(self):
+        hour24 = self.hours if self.am_pm == "AM" else self.hours + 12
+        if hour24 == 24: hour24 = 12
+        if hour24 == 12 and self.am_pm == "AM": hour24 = 0
+        self.time_str = f"{hour24:02d}:{self.minutes:02d}"
+        self.destroy()
+
+    def _center_on_parent(self, parent):
+        parent.update_idletasks()
+        pw = parent.winfo_width()
+        ph = parent.winfo_height()
+        px = parent.winfo_x()
+        py = parent.winfo_y()
+        
+        w = self.winfo_reqwidth()
+        h = self.winfo_reqheight()
+        
+        x = px + (pw - w) // 2
+        y = py + (ph - h) // 2
+        
+        self.geometry(f"+{x}+{y}")
+
+    @staticmethod
+    def get_time(parent, initial_time=None):
+        dialog = TimePickerDialog(parent, initial_time)
+        parent.wait_window(dialog)
+        return dialog.time_str if hasattr(dialog, 'time_str') else ""
 
 class CloudPublishUI(ctk.CTkFrame):
-    def __init__(self, master, dropbox_client, jsonurlbin_client):
+    def __init__(self, master, parent, subject_db):
         super().__init__(master, fg_color=Colors.BACKGROUND)
         self.master = master
-        self.dropbox_client = dropbox_client
-        self.jsonurlbin_client = jsonurlbin_client
+        self.db_manager = subject_db
         self.file_path = None
-        self.registration_password = None
+        self.parsed_questions = []
         self.registration_times = None
+        
         self.create_widgets()
+    
+    def select_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Encrypted Files", "*.enc")])
+        if file_path:
+            self.file_entry.delete(0, "end")
+            self.file_entry.insert(0, file_path)
+            self.decrypt_file(file_path)
 
-    # [Keep all cryptographic methods the same...]
+    def get_subject_codes(self):
+        subjects = self.db_manager.fetch_data()
+        return [sub[0] for sub in subjects] 
+
+    def update_subject_details(self, choice):
+        subjects = self.db_manager.fetch_data()
+        details = next((sub for sub in subjects if sub[0] == choice), None)
+
+        if details:
+            self.detail_labels['subject_name'].configure(text=details[1])
+        else:
+            self.detail_labels['subject_name'].configure(text="")
+        
+        self.time_duration_slider.set(5.0)
+        self.update_time_label(5.0)
+        self.calculate_total_marks()
+        self.calculate_total_questions()
+        
+    def update_time_label(self, value):
+        self.time_duration_label.configure(text=f"{round(value, 1)} min")
+        self.calculate_total_marks()
+    
+    def calculate_total_marks(self):
+        total_marks = sum(int(q['marks']) for q in self.parsed_questions) if self.parsed_questions else 0
+        self.detail_labels['total_marks'].configure(text=str(total_marks))
+
+    def calculate_total_questions(self):
+        total_questions = len(self.parsed_questions)
+        self.detail_labels['total_questions'].configure(text=str(total_questions))
+        
+    def select_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Encrypted Files", "*.enc")])
+        if file_path:
+            self.file_entry.delete(0, "end")
+            self.file_entry.insert(0, file_path)
+            self.decrypt_file(file_path)
+
+    def decrypt_file(self, file_path):
+        pass_dialog = PasswordDialog(self, mode="decrypt")
+        self.wait_window(pass_dialog)
+        
+        if pass_dialog.password:
+            try:
+                with open(file_path, "r") as f:
+                    encrypted_data = json.load(f)
+                
+                decrypted_text = self._decrypt_data(encrypted_data, pass_dialog.password)
+                if decrypted_text is None:
+                    messagebox.showerror("Error", "Invalid password or corrupted file!")
+                    return
+                
+                self.parsed_questions = json.loads(decrypted_text)
+                self.calculate_total_questions()
+                self.calculate_total_marks()
+                messagebox.showinfo("Success", "File decrypted successfully!")
+
+            except Exception as e:
+                messagebox.showerror("Error", f"Decryption failed: {str(e)}")
+    
+    def create_widgets(self):
+        main_frame = ctk.CTkFrame(self.master, fg_color=Colors.BACKGROUND)
+        main_frame.pack(pady=20, padx=30, fill="both", expand=True)
+
+        # File Selection
+        file_frame = ctk.CTkFrame(main_frame, fg_color=Colors.BACKGROUND)
+        file_frame.pack(fill="x", pady=5)
+        
+        ctk.CTkLabel(file_frame, text="Encrypted Paper File:").pack(side="left", padx=5)
+        self.file_entry = ctk.CTkEntry(
+            file_frame, 
+            placeholder_text="Select .enc file",
+            width=300
+        )
+        self.file_entry.pack(side="left", padx=5, fill="x", expand=True)
+        
+        PrimaryButton(
+            master=file_frame, 
+            text="Browse", 
+            command=self.select_file, 
+            width=100
+        ).pack(side="left", padx=5)
+
+        subject_frame = ctk.CTkFrame(main_frame, fg_color=Colors.BACKGROUND)
+        subject_frame.pack(fill="x", pady=10)
+        
+        ctk.CTkLabel(subject_frame, text="Subject Code:").pack(side="left", padx=5)
+        self.subject_combo = ctk.CTkComboBox(
+            subject_frame,
+            values=self.get_subject_codes(),
+            width=200,
+            fg_color=Colors.Inputs.BACKGROUND,
+            text_color=Colors.Inputs.TEXT,
+            border_color=Colors.Inputs.BORDER,
+            command=self.update_subject_details
+        )
+        self.subject_combo.pack(side="left", padx=5)
+        self.subject_combo.set("---SELECT---")
+
+        details_frame = ctk.CTkFrame(main_frame, fg_color=Colors.BACKGROUND)
+        details_frame.pack(fill="x", pady=10)
+        self.detail_labels = {}
+
+        ctk.CTkLabel(details_frame, text="Subject Name:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
+        self.detail_labels['subject_name'] = ctk.CTkLabel(details_frame, text="")
+        self.detail_labels['subject_name'].grid(row=0, column=1, sticky="w", padx=5, pady=5)
+
+        ctk.CTkLabel(details_frame, text="Total Questions:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
+        self.detail_labels['total_questions'] = ctk.CTkLabel(details_frame, text="0")
+        self.detail_labels['total_questions'].grid(row=1, column=1, sticky="w", padx=5, pady=5)
+
+        ctk.CTkLabel(details_frame, text="Total Marks:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
+        self.detail_labels['total_marks'] = ctk.CTkLabel(details_frame, text="0")
+        self.detail_labels['total_marks'].grid(row=2, column=1, sticky="w", padx=5, pady=5)
+
+        ctk.CTkLabel(details_frame, text="Exam Date:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
+        self.subject_date_picker = DateEntry(
+            details_frame, 
+            date_pattern='yyyy-mm-dd', 
+            mindate=datetime.date.today())
+        self.subject_date_picker.grid(row=3, column=1, sticky="w", padx=5, pady=5)
+
+        ctk.CTkLabel(details_frame, text="Time per Question:").grid(row=4, column=0, sticky="w", padx=5, pady=5)
+        time_duration_frame = ctk.CTkFrame(details_frame, fg_color="transparent")
+        time_duration_frame.grid(row=4, column=1, sticky="ew", padx=5, pady=5)
+        
+        self.time_duration_slider = ctk.CTkSlider(
+            time_duration_frame, 
+            from_=1, 
+            to=10, 
+            number_of_steps=18, 
+            command=self.update_time_label,
+            width=200
+        )
+        self.time_duration_slider.set(5.0)
+        self.time_duration_slider.pack(side="left", padx=5)
+        self.time_duration_label = ctk.CTkLabel(time_duration_frame, text="5.0 min")
+        self.time_duration_label.pack(side="left", padx=5)
+
+        ctk.CTkLabel(details_frame, text="Registration Window:").grid(row=5, column=0, sticky="w", padx=5, pady=5)
+        reg_time_frame = ctk.CTkFrame(details_frame, fg_color="transparent")
+        reg_time_frame.grid(row=5, column=1, sticky="w", padx=5, pady=5)
+        
+        self.registration_time_label = ctk.CTkLabel(reg_time_frame, text="Not Set")
+        self.registration_time_label.pack(side="left", padx=5)
+        
+        PrimaryButton(
+            reg_time_frame, 
+            text="Set Time", 
+            command=self.set_registration_time,
+            width=100
+        ).pack(side="left", padx=5)
+
+        submit_frame = ctk.CTkFrame(main_frame, fg_color=Colors.BACKGROUND)
+        submit_frame.pack(fill="x", pady=5)
+
+        PrimaryButton(
+            submit_frame,
+            text="Upload",
+            command=self.export_to_dropbox,
+            width=100
+        ).pack(side="left", padx=5)
+
+    def set_registration_time(self):
+        start_time_str = TimePickerDialog.get_time(self.master)
+        if not start_time_str:
+            return
+            
+        duration_dialog = ctk.CTkToplevel(self.master)
+        duration_dialog.title("Select Duration Extension")
+        duration_dialog.geometry("300x150")
+        duration_dialog.transient(self.master)
+        
+        ctk.CTkLabel(duration_dialog, text="Extend registration window by:").pack(pady=10)
+        
+        btn_frame = ctk.CTkFrame(duration_dialog, fg_color="transparent")
+        btn_frame.pack(pady=10)
+        
+        selected_duration = ctk.IntVar(value=0)
+        
+        for mins in [10, 20, 30]:
+            ctk.CTkRadioButton(
+                btn_frame,
+                text=f"{mins} minutes",
+                variable=selected_duration,
+                value=mins,
+                fg_color=Colors.Radio.PRIMARY,
+                hover_color=Colors.Radio.HOVER,
+                text_color=Colors.Radio.TEXT
+            ).pack(side="left", padx=10)
+        
+        def confirm_duration():
+            duration_dialog.destroy()
+            duration_dialog.grab_release()
+            
+        ctk.CTkButton(
+            duration_dialog,
+            text="Confirm",
+            command=confirm_duration
+        ).pack(pady=10)
+        
+        self.wait_window(duration_dialog)
+        
+        if selected_duration.get() == 0:
+            return
+    
+        start_h, start_m = map(int, start_time_str.split(':'))
+        start_dt = datetime.datetime.combine(datetime.date.today(), datetime.time(start_h, start_m))
+        end_dt = start_dt + datetime.timedelta(minutes=selected_duration.get())
+        
+        self.registration_times = (
+            start_dt.strftime("%H:%M"),
+            end_dt.strftime("%H:%M")
+        )
+        self.registration_time_label.configure(
+            text=f"{self.registration_times[0]} - {self.registration_times[1]}",
+            text_color=Colors.Texts.FIELDS
+        )
+
+    @staticmethod
+    def generate_exam_id():
+        idx = ""
+        characters = "ABCDEFGHIJKLMNPQURSTUVWXYZ123456789"
+
+        for i in range(6):
+            idx += characters[floor(random() * len(characters))]
+
+        return idx
+
+    @staticmethod
+    def generate_access_code():
+        characters = "123456789ABCDEFGHIJKLMNPQURSTVUWXYZ@#$"
+        access_code = ""
+
+        for i in range(6):
+            access_code += characters[floor(random() * len(characters))]
+
+        return access_code
+    
+    @staticmethod
+    def remove_correct_answers(parsed_questions):
+        question_dict = {}
+
+        for index, question in enumerate(parsed_questions, start=1):
+            question_id = f"Q{index}" 
+            question_copy = question.copy()
+
+            if "correct" in question_copy:
+                question_copy.pop("correct")
+
+            question_dict[question_id] = question_copy
+
+        return question_dict
+
+    @staticmethod
+    def extract_correct_answers(parsed_questions):
+        correct_answers_dict = {}
+
+        for index, question in enumerate(parsed_questions, start=1):
+            if "correct" in question:
+                question_id = f"Q{index}"
+                correct_answers_dict[question_id] = question["correct"]
+
+        return correct_answers_dict
+
+
+    def export_to_dropbox(self):
+        total_duration = round(self.time_duration_slider.get() * len(self.parsed_questions), 1)
+        instructions = self.db_manager.get_instructions(self.subject_combo.get()).split("\n")
+        questions = self.remove_correct_answers(self.parsed_questions)
+        answers = self.extract_correct_answers(self.parsed_questions)
+        access_code = self.generate_access_code()
+        exam_id = self.generate_exam_id()
+
+        exam_paper = {
+            "auth_data": {
+                "exam-id": exam_id,
+                "access-code": access_code,
+                "registration_time": self.registration_times[0],
+                "registration_end_time": self.registration_times[1],
+                "registration_date": self.subject_date_picker.get_date().strftime("%d-%m-%Y")
+            },
+            "subject_details": {
+                "subject_name": self.detail_labels["subject_name"].cget("text"),
+                "subject_code": self.subject_combo.get(),
+                "time_duration": total_duration,
+                "registration_time": self.registration_times[0],
+                "registration_end_time": self.registration_times[1],
+                "exam_start_time": self.registration_times[1],
+                "instructions": instructions,
+                "subject_date": self.subject_date_picker.get_date().strftime("%d-%m-%Y"),
+                "total_marks": self.detail_labels["total_marks"].cget("text")
+            },
+            "questions": questions,
+            "answer-key": answers
+        }
+
+        encrypted_data = self._encrypt_data(exam_paper, access_code)
+        file_path = getPath(f"database\\CloudDB\\{exam_id}.enc")
+
+        with open(file_path, 'w') as f:
+            json.dump(encrypted_data, f)
+
+        with open(DBX_PATH, "r") as f:
+            data = json.load(f)
+
+        access_token = data["access_token"]
+        app_key = data["app_key"]
+        app_secret = data["app_secret"]
+        dbx_backend = DropboxBackend(access_token=access_token, app_key=app_key, app_secret=app_secret, root_path=getPath("database\CloudDB"))
+        try:
+            upload_file = dbx_backend.upload_file(file_path, f"/uploads/{exam_id}.enc")
+            if upload_file:
+                messagebox.showinfo("Paper Generated Successfully!", f"EXAM-ID: {exam_id}, \nACCESS-CODE: {access_code}")
+        except Exception as e:
+            messagebox.showerror("Something Went Wrong!", f"{e}")
+        
+        
+    
     def _derive_key(self, password, salt):
         # ! Credits ! Tech with tim & Neuraline YT
         kdf = PBKDF2HMAC(
@@ -101,18 +553,23 @@ class CloudPublishUI(ctk.CTkFrame):
         salt = os.urandom(16)
         key = self._derive_key(password, salt)
         iv = os.urandom(16)
-        
+
         cipher = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
         encryptor = cipher.encryptor()
-        
-        padded_data = data + (16 - len(data) % 16) * chr(16 - len(data) % 16)
+
+        data_str = json.dumps(data)
+
+        pad_len = 16 - (len(data_str) % 16)
+        padded_data = data_str + chr(pad_len) * pad_len
+
         ciphertext = encryptor.update(padded_data.encode()) + encryptor.finalize()
-        
+
         return {
             'salt': base64.b64encode(salt).decode(),
             'iv': base64.b64encode(iv).decode(),
             'ciphertext': base64.b64encode(ciphertext).decode()
         }
+
 
     def _decrypt_data(self, encrypted_data, password):
         # ! Credits ! Tech with tim & Neuraline YT
@@ -130,156 +587,3 @@ class CloudPublishUI(ctk.CTkFrame):
             return plaintext[:-pad_len].decode()
         except (InvalidKey, ValueError, InvalidTag):
             return None
-    
-
-    def create_widgets(self):
-        self.grid(row=0, column=0, padx=20, pady=20, sticky="nsew")
-        
-        # File Selection Section
-        file_frame = ctk.CTkFrame(self, fg_color=Colors.BACKGROUND)
-        file_frame.grid(row=0, column=0, columnspan=2, sticky="ew", pady=5)
-        
-        ctk.CTkLabel(file_frame, text="Select Encrypted Paper (.enc)", 
-                    text_color=Colors.Texts.HEADERS).pack(side="left", padx=5)
-        self.file_entry = ctk.CTkEntry(file_frame, width=300, 
-                                     placeholder_text="Select a valid .enc file",
-                                     fg_color=Colors.Inputs.BACKGROUND)
-        self.file_entry.pack(side="left", padx=5, fill="x", expand=True)
-        PrimaryButton(file_frame, text="Browse", command=self.select_file, width=80).pack(side="left", padx=5)
-        
-        # Exam Details Section
-        details_frame = ctk.CTkFrame(self, fg_color=Colors.BACKGROUND)
-        details_frame.grid(row=1, column=0, columnspan=2, sticky="ew", pady=10)
-        
-        # Subject and Date
-        ctk.CTkLabel(details_frame, text="Subject Code:", text_color=Colors.Texts.HEADERS).grid(row=0, column=0, sticky="w")
-        self.subject_entry = ctk.CTkEntry(details_frame, fg_color=Colors.Inputs.BACKGROUND)
-        self.subject_entry.grid(row=0, column=1, padx=5, pady=2)
-        
-        ctk.CTkLabel(details_frame, text="Exam Date:", text_color=Colors.Texts.HEADERS).grid(row=1, column=0, sticky="w")
-        self.date_entry = ctk.CTkEntry(details_frame, fg_color=Colors.Inputs.BACKGROUND)
-        self.date_entry.grid(row=1, column=1, padx=5, pady=2)
-        
-        # Registration Time
-        self.time_button = PrimaryButton(details_frame, text="Set Registration Time", 
-                                        command=self.set_registration_time)
-        self.time_button.grid(row=2, column=0, columnspan=2, pady=10, sticky="ew")
-        
-        # Features Section
-        features_frame = ctk.CTkFrame(self, fg_color=Colors.BACKGROUND)
-        features_frame.grid(row=2, column=0, columnspan=2, sticky="ew", pady=10)
-        
-        self.negative_marking_var = ctk.IntVar()
-        ctk.CTkCheckBox(features_frame, text="Enable Negative Marking",
-                       variable=self.negative_marking_var,
-                       command=self.toggle_negative_marking).pack(anchor="w")
-        self.negative_marks_entry = ctk.CTkEntry(features_frame, 
-                                                placeholder_text="Negative marks per wrong answer",
-                                                fg_color=Colors.Inputs.BACKGROUND,
-                                                state="disabled")
-        self.negative_marks_entry.pack(fill="x", pady=5)
-        
-        self.shuffle_var = ctk.IntVar()
-        ctk.CTkCheckBox(features_frame, text="Shuffle Questions", variable=self.shuffle_var).pack(anchor="w")
-        
-        # Filename Section
-        filename_frame = ctk.CTkFrame(self, fg_color=Colors.BACKGROUND)
-        filename_frame.grid(row=3, column=0, columnspan=2, sticky="ew", pady=10)
-        
-        ctk.CTkLabel(filename_frame, text="Cloud Filename:", text_color=Colors.Texts.HEADERS).pack(side="left", padx=5)
-        self.filename_entry = ctk.CTkEntry(filename_frame, width=150, fg_color=Colors.Inputs.BACKGROUND)
-        self.filename_entry.pack(side="left", padx=5)
-        PrimaryButton(filename_frame, text="Generate", command=self.generate_filename, width=80).pack(side="left", padx=5)
-        
-        # Upload Button
-        PrimaryButton(self, text="Upload to Cloud", command=self.upload_file).grid(row=4, column=0, columnspan=2, pady=10)
-        
-        self.columnconfigure(0, weight=1)
-
-    def set_registration_time(self):
-        time_dialog = TimePickerDialog(self)
-        self.wait_window(time_dialog)
-        if time_dialog.start_time and time_dialog.end_time:
-            self.registration_times = (time_dialog.start_time, time_dialog.end_time)
-            self.time_button.configure(text=f"Registration Time: {time_dialog.start_time} - {time_dialog.end_time}")
-
-    def select_file(self):
-        file_path = filedialog.askopenfilename(filetypes=[("Encrypted Files", "*.enc")])
-        if file_path:
-            pass_dialog = PasswordDialog(self.master, mode="decrypt")
-            self.master.wait_window(pass_dialog)
-
-            if pass_dialog.password:
-                try:
-                    with open(file_path, "r") as f:
-                        encrypted_data = json.load(f)
-                    
-                    decrypted_data = self._decrypt_data(encrypted_data, pass_dialog.password)
-                    if decrypted_data is None:
-                        raise ValueError("Invalid password")
-                        
-                    # Auto-fill subject and date from decrypted data
-                    paper_data = json.loads(decrypted_data)
-                    self.subject_entry.delete(0, "end")
-                    self.subject_entry.insert(0, paper_data.get("subject_code", ""))
-                    self.date_entry.delete(0, "end")
-                    self.date_entry.insert(0, paper_data.get("exam_date", ""))
-                    
-                    self.file_path = file_path
-                    self.registration_password = pass_dialog.password
-                    self.file_entry.delete(0, "end")
-                    self.file_entry.insert(0, file_path)
-                    
-                except Exception as e:
-                    messagebox.showerror("Error", f"Failed to load file: {str(e)}")
-                    self.file_entry.delete(0, "end")
-    
-    def toggle_negative_marking(self):
-        if self.negative_marking_var.get():
-            self.negative_marks_entry.configure(state="normal")
-        else:
-            self.negative_marks_entry.configure(state="disabled")
-
-    def generate_filename(self):
-        random_filename = "".join(random.choices(string.ascii_letters + string.digits, k=8))
-        self.filename_entry.delete(0, "end")
-        self.filename_entry.insert(0, random_filename)
-
-    def limit_filename_length(self, event):
-        if len(self.filename_entry.get()) > 8:
-            self.filename_entry.delete(8, "end")
-
-    def upload_file(self):
-        if not all([self.file_path, self.filename_entry.get(), self.registration_times]):
-            messagebox.showerror("Error", "Please complete all fields!")
-            return
-        
-        try:
-            filename = self.filename_entry.get() + ".enc"
-            
-            # Upload to Dropbox
-            self.dropbox_client.upload_file(self.file_path, filename, self.registration_password)
-            
-            # Prepare paper details
-            paper_details = {
-                "subject_code": self.subject_entry.get(),
-                "exam_date": self.date_entry.get(),
-                "registration_time": f"{self.registration_times[0]}-{self.registration_times[1]}",
-                "negative_marking": bool(self.negative_marking_var.get()),
-                "negative_mark_value": float(self.negative_marks_entry.get()) if self.negative_marking_var.get() else 0,
-                "shuffle_questions": bool(self.shuffle_var.get()),
-                "upload_date": datetime.datetime.now().isoformat(),
-                "enable": True,
-                "results": []
-            }
-            
-            # Store metadata
-            self.jsonurlbin_client.store_paper_details(filename, paper_details)
-            messagebox.showinfo("Success", "Paper uploaded successfully!")
-            
-        except Exception as e:
-            messagebox.showerror("Upload Error", f"Failed to upload: {str(e)}")
-
-app = ctk.CTk()
-CloudPublishUI(app, None, None)
-app.mainloop()

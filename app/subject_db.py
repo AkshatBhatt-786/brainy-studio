@@ -20,6 +20,23 @@ class SubjectDBManager:
         conn.commit()
         conn.close()
 
+    def get_subject_name(self, subject_code):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT subject_name FROM subjects WHERE subject_code = ?", (subject_code, ))
+        results = cursor.fetchone()
+        conn.close()
+        return results
+    
+    def get_instructions(self, subject_code):
+        conn = sqlite3.connect(self.db_path)
+        cursor = conn.cursor()
+        cursor.execute("SELECT instructions FROM subjects WHERE subject_code = ?", (subject_code, ))
+        results = cursor.fetchone()
+        conn.close()
+        return results[0]
+
+
     def fetch_data(self, search_query=None):
         conn = sqlite3.connect(self.db_path)
         cursor = conn.cursor()
@@ -53,12 +70,13 @@ class SubjectDBManager:
         conn.close()
 
 class SubjectManagerUI(ctk.CTkToplevel):
-    def __init__(self, parent):
+    def __init__(self, parent, frame):
         super().__init__(parent)
         self.db_manager = SubjectDBManager()
         self.title("Subject Database Manager")
         self.geometry(centerWindow(parent, 900, 550, parent._get_window_scaling()))
         self.configure(fg_color=Colors.BACKGROUND)
+        self.parent_frame = frame
 
         self.transient(parent)
         self.grab_set()
@@ -128,6 +146,7 @@ class SubjectManagerUI(ctk.CTkToplevel):
         subject_code = self.tree.item(selected_item, "values")[0]
         self.db_manager.delete_subject(subject_code)
         self.load_data()
+        self.parent_frame.get_subject_codes()
         messagebox.showinfo("Success", "Subject deleted successfully!")
     
     def open_add_window(self):
@@ -173,6 +192,7 @@ class SubjectManagerUI(ctk.CTkToplevel):
 
             if self.db_manager.add_subject(code, name, instructions):
                 messagebox.showinfo("Success", "Subject added successfully!")
+                self.parent_frame.get_subject_codes()
                 add_window.destroy()
                 self.load_data()
             else:

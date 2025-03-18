@@ -28,7 +28,7 @@ import datetime
 from users import UserManager, AuthView
 from create_paper import CreatePaper
 from generate_pdf import GeneratePDFUI
-from cloud_dashboard import CloudDashboard
+from cloud_export import CloudPublishUI
 from subject_db import SubjectDBManager
 
 subject_db = SubjectDBManager()
@@ -174,7 +174,7 @@ class BrainyStudioApp(ctk.CTk):
 
         self.footer_label = ctk.CTkLabel(
             master=self.main_content,
-            text="Brainy Studio v1.2.0 (beta)",
+            text="Brainy Studio v1.0.2 (beta)",
             font=("Arial", 12),
             text_color=Colors.Footer.TEXT
         )
@@ -506,7 +506,7 @@ class BrainyStudioApp(ctk.CTk):
 
         if page_name == "cloud-dashboard":
             self.title("Cloud Dashboard")
-            self.cloud_page = CloudDashboard(self.main_content, parent=self)
+            self.cloud_page = CloudPublishUI(self.main_content, parent=self, subject_db=subject_db)
 
         if page_name == "export-page":
             self.export_page = GeneratePDFUI(self, subject_db, self, self.main_content)

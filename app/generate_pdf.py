@@ -57,7 +57,7 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.subject_combo.pack(side="left", padx=5)
         self.subject_combo.set("---SELECT---")
 
-        LinkButton(header_frame, text="Edit Database!", command=lambda parent=self.parent: SubjectManagerUI(parent)).pack(side="left", padx=10)
+        LinkButton(header_frame, text="Edit Database!", command=lambda parent=self.parent, frame=self: SubjectManagerUI(parent, frame)).pack(side="left", padx=10)
         
         self.detail_labels = {}
         details_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
@@ -200,7 +200,7 @@ class GeneratePDFUI(ctk.CTkFrame):
         try:
             total_duration = round(self.time_duration_slider.get() * len(self.parsed_questions), 1)
             subject_code = self.subject_combo.get()
-            selected_subject = self.subject_db.get(subject_code, {})
+            selected_subject = self.db_manager.get_subject_name(subject_code)
 
             subject_details = {
                 'subject_code': self.subject_combo.get(),
@@ -208,7 +208,7 @@ class GeneratePDFUI(ctk.CTkFrame):
                 'subject_date': self.subject_date_picker.get_date().strftime("%Y-%m-%d"),
                 'time_duration': f"{total_duration} minutes",
                 'total_marks': self.calculate_total_marks(),
-                'instructions': selected_subject.get("instructions", [])
+                'instructions': self.db_manager.get_instructions(subject_code)
             }
 
             generator = GeneratePDF(

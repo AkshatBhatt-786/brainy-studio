@@ -18,8 +18,9 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
 from dropbox_backend import DropboxBackend
+from firebase_backend import FirebaseBackend
 
-DBX_PATH = getPath("database\\dbx_backend.json")
+DBX_PATH = os.getenv("DBX_BACKEND")
 
 class TimePickerDialog(ctk.CTkToplevel):
     def __init__(self, parent, initial_time=None):
@@ -484,16 +485,30 @@ class CloudPublishUI(ctk.CTkFrame):
 
         return correct_answers_dict
 
+    @staticmethod
+    def create_question_id_mapping(parsed_questions):
+        question_id_mapping = {}
+
+        for index, question in enumerate(parsed_questions, start=1):
+            if "id" in question:
+                question_id_mapping[f"Q{index}"] = question["id"]
+
+        return question_id_mapping
+
 
     def export_to_dropbox(self):
         total_duration = round(self.time_duration_slider.get() * len(self.parsed_questions), 1)
         instructions = self.db_manager.get_instructions(self.subject_combo.get()).split("\n")
         questions = self.remove_correct_answers(self.parsed_questions)
         answers = self.extract_correct_answers(self.parsed_questions)
+        questions_blueprint = self.create_question_id_mapping(self.parsed_questions)
         access_code = self.generate_access_code()
         exam_id = self.generate_exam_id()
 
         exam_paper = {
+            "brainy-studio": {
+                "version": "1.2.0 (beta)"
+            },
             "auth_data": {
                 "exam-id": exam_id,
                 "access-code": access_code,
@@ -513,6 +528,7 @@ class CloudPublishUI(ctk.CTkFrame):
                 "total_marks": self.detail_labels["total_marks"].cget("text")
             },
             "questions": questions,
+            "question-mapping": questions_blueprint,
             "answer-key": answers
         }
 
@@ -532,12 +548,18 @@ class CloudPublishUI(ctk.CTkFrame):
         try:
             upload_file = dbx_backend.upload_file(file_path, f"/uploads/{exam_id}.enc")
             if upload_file:
-                messagebox.showinfo("Paper Generated Successfully!", f"EXAM-ID: {exam_id}, \nACCESS-CODE: {access_code}")
+                result_link = FirebaseBackend()
+                try:
+                    created = result_link.create_exam(exam_id=exam_id, access_code=access_code, subject_details=exam_paper["subject_details"])
+                    if created:
+                        messagebox.showinfo("Paper Generated Successfully!", f"EXAM-ID: {exam_id}, \nACCESS-CODE: {access_code}")
+                except Exception as e:
+                        messagebox.showerror("Something Went Wrong!, Try Again Later!")
         except Exception as e:
             messagebox.showerror("Something Went Wrong!", f"{e}")
         
-        
-    
+        return
+
     def _derive_key(self, password, salt):
         # ! Credits ! Tech with tim & Neuraline YT
         kdf = PBKDF2HMAC(

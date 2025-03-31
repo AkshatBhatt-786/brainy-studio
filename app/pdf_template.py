@@ -40,11 +40,14 @@ class GeneratePDF:
         pdf = canvas.Canvas(file_path, pagesize=A4)
         width, height = A4
         page_num = 1
-        page_height = height - 150
-        used_height = 0
-        default_questions_per_page = 4
-        first_page_limit = 3  # Limit first page to 3 MCQs
-
+        y_position = height - 100
+        max_y = 50
+        question_number = 1
+        question_gap = 7
+        option_gap = 3
+        max_option_width = width - 200
+        marks_x_position = width - 50
+        
         if self.include_header:
             pdf.setFont("Helvetica-Bold", 24)
             pdf.setFillColor(colors.HexColor("#2E3B55"))
@@ -55,79 +58,64 @@ class GeneratePDF:
             pdf.drawString(50, height - 130, f"Subject Name: {self.subject_details['subject_name']}")
             pdf.drawString(50, height - 150, f"Time Duration: {self.subject_details['time_duration']}")
             pdf.drawString(width - 250, height - 150, f"Total Marks: {self.subject_details['total_marks']}")
-            pdf.setLineWidth(2)
             pdf.line(50, height - 160, width - 50, height - 160)
-
-        y_position = height - 180
-        pdf.setFont("Helvetica-Bold", 12)
-        pdf.drawString(50, y_position, "Instructions:")
-        y_position -= 15
-        pdf.setFont("Helvetica", 10)
-        instruction_lines = self.instructions.split('\n')
-        for line in instruction_lines:
-            wrapped_lines = wrap(line, width=100)
-            for wrapped_line in wrapped_lines:
-                pdf.drawString(50, y_position, wrapped_line)
-                y_position -= 15
-        y_position -= 10
-        pdf.setLineWidth(1)
-        pdf.line(50, y_position, width - 50, y_position)
-        y_position -= 20
-        question_count = 0
+            y_position -= 80
 
         for question in self.questions:
+            pdf.setFillColor(colors.HexColor("#000000"))
             wrapped_question = wrap(question['text'], width=85)
             options_list = question.get('options', [])
-            question_height = len(wrapped_question) * 15
-            options_height = len(options_list) * 25 if options_list else 20
-            total_height = question_height + options_height + 40
+            total_height = len(wrapped_question) * 15 + (len(options_list) * (12 + option_gap)) + 10
 
-            if (page_num == 1 and question_count >= first_page_limit) or (page_num > 1 and question_count >= default_questions_per_page and used_height + total_height > page_height):
+            if y_position - total_height < max_y:
                 self.add_footer(pdf, page_num, width)
                 pdf.showPage()
                 page_num += 1
-                y_position = height - 120
-                used_height = 0
-                question_count = 0
-
-            if used_height + total_height > page_height - 50:
-                self.add_footer(pdf, page_num, width)
-                pdf.showPage()
-                page_num += 1
-                y_position = height - 120
-                used_height = 0
-                question_count = 0
+                y_position = height - 80
 
             pdf.setFont("Helvetica-Bold", 12)
-            y_offset = 0
-            for line in wrapped_question:
-                pdf.drawString(50, y_position - y_offset, line)
+            pdf.drawString(50, y_position, f"{question_number}. {wrapped_question[0]}")
+            y_offset = 15
+            for line in wrapped_question[1:]:
+                pdf.drawString(60, y_position - y_offset, line)
                 y_offset += 15
             y_position -= y_offset
-            pdf.drawRightString(width - 50, y_position, f"Marks: {question['marks']}")
-
             pdf.setFont("Helvetica", 11)
-            option_y = y_position - 25
+            pdf.drawString(marks_x_position, y_position, f"{question['marks']}")
+            y_position -= question_gap
 
             if options_list:
-                for option in options_list:
-                    pdf.circle(70, option_y, 4)
-                    if self.show_answers and 'correct' in question and option == question['correct']:
-                        pdf.setFillColor(colors.HexColor("#333333"))
-                        pdf.circle(70, option_y, 3, stroke=0, fill=1)
-                        pdf.setFillColor(colors.HexColor("#000000"))
-                    pdf.drawString(90, option_y - 4, option)
-                    option_y -= 25
-            elif question['type'] in ['One Word', 'True/False']:
+                option_widths = [pdf.stringWidth(opt, "Helvetica", 11) for opt in options_list]
+                total_option_width = sum(option_widths) + (len(options_list) - 1) * 15
+                
+                if total_option_width <= max_option_width:
+                    x_pos = 70
+                    for option in options_list:
+                        pdf.circle(x_pos - 10, y_position + 2, 4)
+                        if self.show_answers and 'correct' in question and option == question['correct']:
+                            pdf.setFillColor(colors.HexColor("#333333"))
+                            pdf.circle(x_pos - 10, y_position + 2, 3, stroke=0, fill=1)
+                            pdf.setFillColor(colors.HexColor("#000000"))
+                        pdf.drawString(x_pos, y_position, option)
+                        x_pos += pdf.stringWidth(option, "Helvetica", 11) + 20
+                    y_position -= 20
+                else:
+                    for option in options_list:
+                        pdf.circle(70, y_position, 4)
+                        if self.show_answers and 'correct' in question and option == question['correct']:
+                            pdf.setFillColor(colors.HexColor("#333333"))
+                            pdf.circle(70, y_position, 3, stroke=0, fill=1)
+                            pdf.setFillColor(colors.HexColor("#000000"))
+                        pdf.drawString(90, y_position - 4, option)
+                        y_position -= (12 + option_gap)
+            
+            if question['type'] in ['One Word', 'True/False'] and self.show_answers and 'correct' in question:
                 pdf.setFont("Helvetica-Oblique", 11)
-                if self.show_answers and 'correct' in question:
-                    pdf.drawString(50, option_y, f"Answer: {question.get('correct', 'N/A')}")
-                    option_y -= 20
-                    
-            pdf.setFont("Helvetica", 11)        
-            y_position = option_y - 20
-            used_height += total_height        
-            question_count += 1
-
+                pdf.drawString(50, y_position, f"Answer: {question.get('correct', 'N/A')}")
+                y_position -= 15
+            
+            y_position -= question_gap
+            question_number += 1
+        
         self.add_footer(pdf, page_num, width)
         pdf.save()

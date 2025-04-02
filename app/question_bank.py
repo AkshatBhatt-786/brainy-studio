@@ -1,8 +1,9 @@
 import customtkinter as ctk
 from tkinter import filedialog, ttk, messagebox
-from utils import centerWindow
+from utils import centerWindow, getPath
 import pandas as pd
 import os
+import sys
 
 
 EXCEL_FILE = r"D:\github_projects\brainy-studio\app\database\question_bank.xlsx"
@@ -14,6 +15,11 @@ class QuestionBank(ctk.CTkToplevel):
         self.parent = parent
         self.attributes("-topmost", True)
         self.title("Question Bank")
+        try:
+            if sys.platform.startswith("win"):
+                self.after(200, lambda: self.iconbitmap(getPath("assets\\icons\\icon.ico")))
+        except Exception:
+            pass
         self.geometry(centerWindow(master, 900, 500, self._get_window_scaling()))
         self.configure(fg_color="#0F172A")
         self.question_data = None

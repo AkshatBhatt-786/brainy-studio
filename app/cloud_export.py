@@ -3,15 +3,15 @@ from tkinter import filedialog, messagebox
 from tkcalendar import DateEntry
 import json
 import datetime
-from ui_components import Colors, PrimaryButton
+from ui_components import Colors, PrimaryButton, LinkButton
 from create_paper import PasswordDialog
 import customtkinter as ctk
 from math import floor
 from random import random
 import base64
-from utils import getPath
+from utils import getPath, centerWindow
 import os
-from rich import print
+from PIL import Image
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -19,6 +19,8 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
 from dropbox_backend import DropboxBackend
 from firebase_backend import FirebaseBackend
+from subject_db import SubjectManagerUI
+import sys
 
 DBX_PATH = os.getenv("DBX_BACKEND")
 
@@ -26,7 +28,12 @@ class TimePickerDialog(ctk.CTkToplevel):
     def __init__(self, parent, initial_time=None):
         super().__init__(parent)
         self.title("Select Time")
-        self.geometry("380x280")
+        try:
+            if sys.platform.startswith("win"):
+                self.after(200, lambda: self.iconbitmap(getPath("assets\\icons\\icon.ico")))
+        except Exception:
+            pass
+        self.geometry(centerWindow(parent, 380, 280, parent._get_window_scaling()))
         self.resizable(False, False)
         self.configure(fg_color=Colors.PRIMARY)
         self.transient(parent)
@@ -53,15 +60,11 @@ class TimePickerDialog(ctk.CTkToplevel):
             pass
 
     def _create_widgets(self):
-        # Main container
         container = ctk.CTkFrame(self, fg_color=Colors.PRIMARY)
         container.pack(padx=20, pady=20, fill="both", expand=True)
 
-        # Time display
         time_frame = ctk.CTkFrame(container, fg_color=Colors.SECONDARY, corner_radius=8)
         time_frame.pack(pady=10, fill="x")
-
-        # Hours controls
         hours_frame = ctk.CTkFrame(time_frame, fg_color="transparent")
         hours_frame.pack(side="left", expand=True, padx=10)
 
@@ -95,7 +98,6 @@ class TimePickerDialog(ctk.CTkToplevel):
             font=("Arial", 16)
         ).pack()
 
-        # Minutes controls
         minutes_frame = ctk.CTkFrame(time_frame, fg_color="transparent")
         minutes_frame.pack(side="left", expand=True, padx=10)
 
@@ -129,7 +131,6 @@ class TimePickerDialog(ctk.CTkToplevel):
             font=("Arial", 16)
         ).pack()
 
-        # AM/PM selector
         self.am_pm_selector = ctk.CTkSegmentedButton(
             container,
             values=["AM", "PM"],
@@ -144,7 +145,6 @@ class TimePickerDialog(ctk.CTkToplevel):
         self.am_pm_selector.pack(pady=10)
         self.am_pm_selector.set(self.am_pm)
 
-        # Control buttons
         button_frame = ctk.CTkFrame(container, fg_color="transparent")
         button_frame.pack(pady=10)
 
@@ -183,6 +183,7 @@ class TimePickerDialog(ctk.CTkToplevel):
         self.destroy()
 
     def _center_on_parent(self, parent):
+        # ! CREDITS/REFERENCES : stakeoverflow
         parent.update_idletasks()
         pw = parent.winfo_width()
         ph = parent.winfo_height()
@@ -208,6 +209,7 @@ class CloudPublishUI(ctk.CTkFrame):
         super().__init__(master, fg_color=Colors.BACKGROUND)
         self.master = master
         self.db_manager = subject_db
+        self.parent = parent
         self.file_path = None
         self.parsed_questions = []
         self.registration_times = None
@@ -281,12 +283,24 @@ class CloudPublishUI(ctk.CTkFrame):
                 messagebox.showerror("Error", f"Decryption failed: {str(e)}")
     
     def create_widgets(self):
-        main_frame = ctk.CTkFrame(self.master, fg_color=Colors.BACKGROUND)
-        main_frame.pack(pady=20, padx=30, fill="both", expand=True)
+        main_frame = ctk.CTkFrame(self.master, fg_color=Colors.Cards.BACKGROUND)
+        main_frame.pack(pady=10, padx=20, fill="both", expand=True)
+        
+        ctk.CTkLabel(
+            main_frame,
+            text="",
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\cloud-computing.png")), size=(50, 50)),
+            compound="top"
+        ).pack(anchor="center", padx=10, pady=10)
 
-        # File Selection
-        file_frame = ctk.CTkFrame(main_frame, fg_color=Colors.BACKGROUND)
-        file_frame.pack(fill="x", pady=5)
+        ctk.CTkLabel(main_frame, 
+                     text="\nExport your Exam to Cloud Exam Platform", 
+                     font=("Arial", 21, "bold")
+                     ).pack(padx=10, pady=10)
+    
+
+        file_frame = ctk.CTkFrame(main_frame, fg_color="#334155")
+        file_frame.pack(fill="x", padx=20, pady=20)
         
         ctk.CTkLabel(file_frame, text="Encrypted Paper File:").pack(side="left", padx=5)
         self.file_entry = ctk.CTkEntry(
@@ -300,11 +314,12 @@ class CloudPublishUI(ctk.CTkFrame):
             master=file_frame, 
             text="Browse", 
             command=self.select_file, 
-            width=100
-        ).pack(side="left", padx=5)
+            width=120,
+            height=42
+        ).pack(side="left", pady=10, padx=5)
 
-        subject_frame = ctk.CTkFrame(main_frame, fg_color=Colors.BACKGROUND)
-        subject_frame.pack(fill="x", pady=10)
+        subject_frame = ctk.CTkFrame(main_frame, fg_color=Colors.Cards.BACKGROUND)
+        subject_frame.pack(fill="x", padx=10, pady=10)
         
         ctk.CTkLabel(subject_frame, text="Subject Code:").pack(side="left", padx=5)
         self.subject_combo = ctk.CTkComboBox(
@@ -319,8 +334,10 @@ class CloudPublishUI(ctk.CTkFrame):
         self.subject_combo.pack(side="left", padx=5)
         self.subject_combo.set("---SELECT---")
 
-        details_frame = ctk.CTkFrame(main_frame, fg_color=Colors.BACKGROUND)
-        details_frame.pack(fill="x", pady=10)
+        LinkButton(subject_frame, text="update database", command=lambda parent=self.parent, frame=self: SubjectManagerUI(parent, frame)).pack(side="left", padx=10)
+
+        details_frame = ctk.CTkFrame(main_frame, fg_color=Colors.Cards.BACKGROUND)
+        details_frame.pack(fill="x", padx=10, pady=10)
         self.detail_labels = {}
 
         ctk.CTkLabel(details_frame, text="Subject Name:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
@@ -370,28 +387,37 @@ class CloudPublishUI(ctk.CTkFrame):
             reg_time_frame, 
             text="Set Time", 
             command=self.set_registration_time,
-            width=100
+            width=120,
+            height=42
         ).pack(side="left", padx=5)
 
-        submit_frame = ctk.CTkFrame(main_frame, fg_color=Colors.BACKGROUND)
+        submit_frame = ctk.CTkFrame(main_frame, fg_color=Colors.Cards.BACKGROUND)
         submit_frame.pack(fill="x", pady=5)
 
         PrimaryButton(
             submit_frame,
             text="Upload",
             command=self.export_to_dropbox,
-            width=100
-        ).pack(side="left", padx=5)
+            width=120,
+            height=42
+        ).pack(anchor="center", padx=5)
+
+        ctk.CTkLabel(main_frame, 
+                     text="Powered by Cloud Exam", 
+                     font=("Consolas", 16, "bold"),
+                     image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\cloud_logo.png")), size=(80, 80)),
+                     compound="right").pack(anchor="w", padx=10, pady=10)
 
     def set_registration_time(self):
-        start_time_str = TimePickerDialog.get_time(self.master)
+        start_time_str = TimePickerDialog.get_time(self.parent)
         if not start_time_str:
             return
             
         duration_dialog = ctk.CTkToplevel(self.master)
         duration_dialog.title("Select Duration Extension")
-        duration_dialog.geometry("300x150")
+        duration_dialog.geometry(centerWindow(self.parent, 600, 300, self.parent._get_window_scaling()))
         duration_dialog.transient(self.master)
+        duration_dialog.configure(fg_color=Colors.BACKGROUND)
         
         ctk.CTkLabel(duration_dialog, text="Extend registration window by:").pack(pady=10)
         

@@ -163,7 +163,7 @@ class BrainyStudioApp(ctk.CTk):
         self._create_action_card("Create Paper", "assets\\images\\create-paper.png", 0, 0, lambda: self.redirect_to_create_paper_page())
         self._create_action_card("Edit Paper", "assets\\images\\edit.png", 0, 1, lambda: self.redirect("edit-page"))
         self._create_action_card("Export To PDF", "assets\\images\\pdf.png", 1, 0, lambda: self.redirect_to_export_page())
-        self._create_action_card("Cloud Dashboard", "assets\\images\\cloud-computing.png", 0, 2, lambda: self.redirect("cloud-dashboard"))
+        self._create_action_card("Export To Cloud", "assets\\images\\cloud-computing.png", 0, 2, lambda: self.redirect("cloud-expo"))
         self._create_action_card("Configure Database", "assets\\images\\server.png", 1, 1, None)
         self._create_action_card("Export to Excel", "assets\\images\\excel.png", 1, 2, None)
 
@@ -261,8 +261,8 @@ class BrainyStudioApp(ctk.CTk):
 
         self.cloud_dashboard_name_btn= SidebarButton(
             master=self.name_frame,
-            text="Cloud Dashboard",
-            command=lambda: self.redirect("cloud-dashboard")
+            text="Cloud Export",
+            command=lambda: self.redirect("cloud-expo")
         )
         self.cloud_dashboard_name_btn.grid(row=5, column=0, pady=10, sticky="w")
 
@@ -340,7 +340,7 @@ class BrainyStudioApp(ctk.CTk):
         self.cloud_dashboard_btn = IconButton(
             self.icon_frame,
             image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\cloud-computing.png")), size=(30, 30)),
-            command=lambda: self.redirect("cloud-dashboard")
+            command=lambda: self.redirect("cloud-expo")
         )
         self.cloud_dashboard_btn.grid(row=4, column=0, pady=20, padx=5, sticky="nsew")
 
@@ -504,8 +504,8 @@ class BrainyStudioApp(ctk.CTk):
             self.edit_page = CreatePaper(self.main_content, edit_mode=True, parent=self, file_path=filepath)
             self.edit_page.pack(padx=10, pady=10, anchor="center")
 
-        if page_name == "cloud-dashboard":
-            self.title("Cloud Dashboard")
+        if page_name == "cloud-expo":
+            self.title("Export to Cloud")
             self.cloud_page = CloudPublishUI(self.main_content, parent=self, subject_db=subject_db)
 
         if page_name == "export-page":

@@ -40,7 +40,8 @@ class GeneratePDFUI(ctk.CTkFrame):
         header_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         header_frame.pack(pady=10, padx=20, fill="x")
 
-        ctk.CTkLabel(header_frame, text="Generate Your Questions to PDF Format!", font=("Arial", 21, "bold")).pack(padx=10, pady=10)
+        ctk.CTkLabel(header_frame, text="\nGenerate Your Questions to PDF Format!\n", font=("Arial", 21, "bold"),
+                     image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\pdf.png")), size=(50, 50)), compound="top").pack(padx=10, pady=10)
         
         ctk.CTkLabel(header_frame, text="Subject Code:").pack(side="left", padx=5)
         self.subject_combo = ctk.CTkComboBox(
@@ -57,7 +58,7 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.subject_combo.pack(side="left", padx=5)
         self.subject_combo.set("---SELECT---")
 
-        LinkButton(header_frame, text="Edit Database!", command=lambda parent=self.parent, frame=self: SubjectManagerUI(parent, frame)).pack(side="left", padx=10)
+        LinkButton(header_frame, text="Update Database", command=lambda parent=self.parent, frame=self: SubjectManagerUI(parent, frame)).pack(side="left", padx=10)
         
         self.detail_labels = {}
         details_frame = ctk.CTkFrame(header_frame, fg_color="transparent")
@@ -76,7 +77,7 @@ class GeneratePDFUI(ctk.CTkFrame):
         self.time_duration_label = ctk.CTkLabel(details_frame, text="5.0 min per question.")  
         self.time_duration_label.grid(row=2, column=2, padx=5, pady=2)
 
-        # Create Slider for 1 - 10 min (step size 0.5)
+   
         self.time_duration_slider = ctk.CTkSlider(
             details_frame,
             from_=1,
@@ -254,8 +255,6 @@ class GeneratePDFUI(ctk.CTkFrame):
     def open_pdf(self, file_path):
         if os.name == 'nt':
             os.startfile(file_path)
-        else:
-            subprocess.call(["xdg-open", file_path])
 
     def _decrypt_data(self, encrypted_data, password):
         # ! Credits ! Tech with tim & Neuraline YT

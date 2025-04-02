@@ -3,6 +3,7 @@ import customtkinter as ctk
 from tkinter import ttk, messagebox
 from utils import getPath, centerWindow
 from ui_components import PrimaryButton, ErrorButton, SearchButton, Colors
+import sys
 
 class SubjectDBManager:
     def __init__(self):
@@ -74,6 +75,11 @@ class SubjectManagerUI(ctk.CTkToplevel):
         super().__init__(parent)
         self.db_manager = SubjectDBManager()
         self.title("Subject Database Manager")
+        try:
+            if sys.platform.startswith("win"):
+                self.after(200, lambda: self.iconbitmap(getPath("assets\\icons\\icon.ico")))
+        except Exception:
+            pass
         self.geometry(centerWindow(parent, 900, 550, parent._get_window_scaling()))
         self.configure(fg_color=Colors.BACKGROUND)
         self.parent_frame = frame
@@ -108,8 +114,11 @@ class SubjectManagerUI(ctk.CTkToplevel):
                         foreground="#333333",
                         fg_color="#1E293B",
                         font=("Arial", 14, "bold"))
+        
+        self.scroll_frame = ctk.CTkScrollableFrame(self, fg_color="#1E293B", corner_radius=10)
+        self.scroll_frame.pack(pady=10, padx=10, fill="both", expand=True)
 
-        tree_frame = ctk.CTkFrame(self, fg_color=Colors.SECONDARY)
+        tree_frame = ctk.CTkFrame(self.scroll_frame)
         tree_frame.pack(pady=10, padx=10, fill='both', expand=True)
         
         self.tree = ttk.Treeview(tree_frame, columns=("Code", "Name", "Instructions"), show="headings")

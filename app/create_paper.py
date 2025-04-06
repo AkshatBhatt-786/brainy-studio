@@ -148,7 +148,7 @@ class QuestionFrame(ctk.CTkFrame):
 
         self.select_var = ctk.BooleanVar(value=False)
         self.select_checkbox = ctk.CTkCheckBox(self, variable=self.select_var, text="", fg_color=Colors.SUCCESS)
-        self.select_checkbox.grid(row=0, column=0, padx=5, pady=5, sticky="nsew")
+        self.select_checkbox.grid(row=0, column=0, padx=10, pady=5, sticky="nsew")
         self.select_checkbox.grid_remove()
 
         self.details_frame = ctk.CTkFrame(self, fg_color="transparent")

@@ -199,7 +199,7 @@ class GeneratePDFUI(ctk.CTkFrame):
 
                 self.parsed_questions = json.loads(decrypted_text)
                 messagebox.showinfo("Success", "File decrypted successfully!")
-
+                
             except Exception as e:
                 messagebox.showerror("Error", f"Decryption failed: {str(e)}")
 

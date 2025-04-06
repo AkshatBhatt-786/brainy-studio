@@ -30,6 +30,7 @@ from create_paper import CreatePaper
 from generate_pdf import GeneratePDFUI
 from cloud_export import CloudPublishUI
 from subject_db import SubjectDBManager
+from excel_export import ExportToExcelUI
 
 subject_db = SubjectDBManager()
 
@@ -141,9 +142,11 @@ class BrainyStudioApp(ctk.CTk):
             master=self.main_content,
             text="Welcome to Brainy Studio!",
             font=("Arial", 32, "bold"),
-            text_color=Colors.HIGHLIGHT
+            text_color=Colors.HIGHLIGHT,
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\logo.png")), size=(70, 70)),
+            compound="right"
         )
-        self.welcome_label.pack(pady=(30, 15))
+        self.welcome_label.pack(pady=(30, 15), padx=(10, 20))
 
         self.tagline_label = ctk.CTkLabel(
             master=self.main_content,
@@ -165,7 +168,7 @@ class BrainyStudioApp(ctk.CTk):
         self._create_action_card("Export To PDF", "assets\\images\\pdf.png", 1, 0, lambda: self.redirect_to_export_page())
         self._create_action_card("Export To Cloud", "assets\\images\\cloud-computing.png", 0, 2, lambda: self.redirect("cloud-expo"))
         self._create_action_card("Configure Database", "assets\\images\\server.png", 1, 1, None)
-        self._create_action_card("Export to Excel", "assets\\images\\excel.png", 1, 2, None)
+        self._create_action_card("Export to Excel", "assets\\images\\excel.png", 1, 2, lambda: self.redirect("excel-export-page"))
 
         # self.recent_projects_frame = ctk.CTkScrollableFrame(self.main_content, fg_color=Colors.SECONDARY, corner_radius=10)
         # self.recent_projects_frame.pack(padx=20, pady=10, expand=True, fill="both")
@@ -198,6 +201,9 @@ class BrainyStudioApp(ctk.CTk):
 
     def redirect_to_export_page(self):
         self.redirect("export-page")
+
+    def redirect_to_export_excel(self):
+        self.redirect("excel-export-page")
 
     def _create_name_frame(self):
         self.name_frame = ctk.CTkScrollableFrame(
@@ -276,7 +282,7 @@ class BrainyStudioApp(ctk.CTk):
         self.export_to_excel_name_btn = SidebarButton(
             master=self.name_frame,
             text="Generate EXCEL",
-            command=None
+            command=lambda: self.redirect_to_export_excel()
         )
         self.export_to_excel_name_btn.grid(row=7, column=0, pady=10, sticky="w")
 
@@ -354,7 +360,7 @@ class BrainyStudioApp(ctk.CTk):
         self.export_to_excel_btn = IconButton(
             self.icon_frame,
             image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\excel.png")), size=(30, 30)),
-            command=None
+            command=lambda: self.redirect_to_export_excel()
         )
         self.export_to_excel_btn.grid(row=6, column=0, pady=20, padx=5, sticky="nsew")
 
@@ -510,6 +516,9 @@ class BrainyStudioApp(ctk.CTk):
 
         if page_name == "export-page":
             self.export_page = GeneratePDFUI(self, subject_db, self, self.main_content)
+
+        if page_name == "excel-export-page":
+            self.excel_page = ExportToExcelUI(self, self, self.main_content)
 
 if __name__ == "__main__":
     app = BrainyStudioApp()

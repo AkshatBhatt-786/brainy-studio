@@ -23,7 +23,7 @@ class Colors:
     SECONDARY = "#1F2937"  
     ACCENT = "#6366F1" 
     HIGHLIGHT = "#22D3EE"  
-    SUCCESS = "#4ADE80" 
+    SUCCESS = "#4CAF50" 
     WARNING = "#FACC15"  
     DANGER = "#F87171"
     BACKGROUND = "#0F172A" 
@@ -32,7 +32,8 @@ class Colors:
         HEADERS = "#E2E8F0"  
         FIELDS = "#CBD5E1"  
         PLACEHOLDER = "#94A3B8"  
-        BORDER = "#475569"  
+        BORDER = "#475569" 
+        SUCCESS = "#C8E6C9" 
 
     class Sidebar:
         BACKGROUND = "#1E293B"
@@ -45,6 +46,8 @@ class Colors:
         SECONDARY = "#10B981"  
         SECONDARY_HOVER = "#34D399"
         DISABLED = "#64748B"
+        SUCCESS_HOVER = "#388E3C"
+        SUCCESS_BORDER = "#2E7D32"
     
     class Inputs:
         BACKGROUND = "#1F2937"

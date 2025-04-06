@@ -102,6 +102,12 @@ class GeneratePDFUI(ctk.CTkFrame):
             height=32
         ).pack(side="left", padx=10)
 
+        self.exam_title_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
+        self.exam_title_frame.pack(pady=10, padx=20, fill="x")
+        ctk.CTkLabel(self.exam_title_frame, text="Exam Title: ").pack(side="left", padx=10)
+        self.exam_title_entry = ctk.CTkEntry(self.exam_title_frame, fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER, placeholder_text="Enter Exam Title", placeholder_text_color=Colors.Inputs.PLACEHOLDER, text_color=Colors.Inputs.TEXT, width=420, height=32)
+        self.exam_title_entry.pack(padx=10, pady=10, side="left")
+
         options_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
         options_frame.pack(pady=10, padx=20, fill="x")
         
@@ -202,8 +208,13 @@ class GeneratePDFUI(ctk.CTkFrame):
             total_duration = round(self.time_duration_slider.get() * len(self.parsed_questions), 1)
             subject_code = self.subject_combo.get()
             selected_subject = self.db_manager.get_subject_name(subject_code)
+            exam_title = self.exam_title_entry.get().upper()
+            if exam_title == "":
+                exam_title = self.detail_labels['subject_name'].cget("text")
+            
 
             subject_details = {
+                'title': exam_title,
                 'subject_code': self.subject_combo.get(),
                 'subject_name': self.detail_labels['subject_name'].cget("text"),
                 'subject_date': self.subject_date_picker.get_date().strftime("%Y-%m-%d"),
@@ -213,7 +224,7 @@ class GeneratePDFUI(ctk.CTkFrame):
             }
 
             generator = GeneratePDF(
-                title=self.detail_labels['subject_name'].cget("text"),
+                title=exam_title,
                 subject_details=subject_details,
                 instructions=subject_details['instructions'], 
                 questions=self.parsed_questions,

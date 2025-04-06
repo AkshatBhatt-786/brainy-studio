@@ -468,22 +468,22 @@ class CloudPublishUI(ctk.CTkFrame):
     @staticmethod
     def generate_exam_id():
         idx = ""
-        characters = "ABCDEFGHIJKLMNPQURSTUVWXYZ123456789"
+        characters = "123456789"
 
-        for i in range(6):
+        for i in range(4):
             idx += characters[floor(random() * len(characters))]
 
-        return idx
+        return f"BS{idx}"
 
     @staticmethod
     def generate_access_code():
-        characters = "123456789ABCDEFGHIJKLMNPQURSTVUWXYZ@#$"
+        characters = "123456789"
         access_code = ""
 
-        for i in range(6):
+        for i in range(4):
             access_code += characters[floor(random() * len(characters))]
 
-        return access_code
+        return f"CE{access_code}"
     
     @staticmethod
     def remove_correct_answers(parsed_questions):
@@ -570,7 +570,7 @@ class CloudPublishUI(ctk.CTkFrame):
         access_token = data["access_token"]
         app_key = data["app_key"]
         app_secret = data["app_secret"]
-        dbx_backend = DropboxBackend(access_token=access_token, app_key=app_key, app_secret=app_secret, root_path=getPath("database\CloudDB"))
+        dbx_backend = DropboxBackend(access_token=access_token, app_key=app_key, app_secret=app_secret, root_path=getPath(r"database\CloudDB"))
         try:
             upload_file = dbx_backend.upload_file(file_path, f"/uploads/{exam_id}.enc")
             if upload_file:

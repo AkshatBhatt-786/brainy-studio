@@ -35,6 +35,7 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
 
+
 class PasswordDialog(ctk.CTkToplevel):
     def __init__(self, parent, mode="encrypt"):
         super().__init__(parent)

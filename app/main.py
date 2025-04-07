@@ -31,6 +31,7 @@ from generate_pdf import GeneratePDFUI
 from cloud_export import CloudPublishUI
 from subject_db import SubjectDBManager
 from excel_export import ExportToExcelUI
+from codex_formatter import CodexFormatter
 
 subject_db = SubjectDBManager()
 
@@ -167,7 +168,7 @@ class BrainyStudioApp(ctk.CTk):
         self._create_action_card("Edit Paper", "assets\\images\\edit.png", 0, 1, lambda: self.redirect("edit-page"))
         self._create_action_card("Export To PDF", "assets\\images\\pdf.png", 1, 0, lambda: self.redirect_to_export_page())
         self._create_action_card("Export To Cloud", "assets\\images\\cloud-computing.png", 0, 2, lambda: self.redirect("cloud-expo"))
-        self._create_action_card("Configure Database", "assets\\images\\server.png", 1, 1, None)
+        self._create_action_card("Open Codex Formatter", "assets\\images\\brainstorm.png", 1, 1, lambda: self.open_codex_formatter())
         self._create_action_card("Export to Excel", "assets\\images\\excel.png", 1, 2, lambda: self.redirect("excel-export-page"))
 
         # self.recent_projects_frame = ctk.CTkScrollableFrame(self.main_content, fg_color=Colors.SECONDARY, corner_radius=10)
@@ -366,8 +367,8 @@ class BrainyStudioApp(ctk.CTk):
 
         self.configure_database_btn = IconButton(
             self.icon_frame,
-            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\server.png")), size=(30, 30))
-            # command=lambda: self.configure_database()
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\brainstorm.png")), size=(30, 30)),
+            command=lambda: self.open_codex_formatter()
         )
         self.configure_database_btn.grid(row=7, column=0, pady=20, padx=5, sticky="nsew")
 
@@ -520,5 +521,10 @@ class BrainyStudioApp(ctk.CTk):
         if page_name == "excel-export-page":
             self.excel_page = ExportToExcelUI(self, self, self.main_content)
 
+    def open_codex_formatter(self):
+        self.attributes("-topmost", False)
+        CodexFormatter(self)
+        return
+    
 if __name__ == "__main__":
     app = BrainyStudioApp()

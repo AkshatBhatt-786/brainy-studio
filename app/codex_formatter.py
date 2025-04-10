@@ -149,27 +149,27 @@ class CodexFormatter(ctk.CTkToplevel):
     def format_expression(self):
         text = self.input_entry.get()
 
-        # Handle fractions
+        # ** Handle fractions
         for pattern, replacement in fractions.items():
             text = re.sub(pattern, replacement, text)
 
-        # Handle predefined keywords
+        # ** Handle predefined keywords
         escaped_keys = [re.escape(k) for k in symbols.keys()]
         text = re.sub(r"\b(" + "|".join(escaped_keys) + r")\b", lambda m: symbols[m.group(0)], text)
 
-        # Normalize spacing like 'sqrt (x)' → 'sqrt(x)'
+        # ** Normalize spacing like 'sqrt (x)' → 'sqrt(x)'
         text = re.sub(r"(sqrt|int|sum|log)\s+\(", lambda m: m.group(1) + "(", text)
 
-        # Superscripts (e.g. ^2, ^(x+1))
+        # ** Superscripts (e.g. ^2, ^(x+1))
         text = re.sub(r"\^(\([^\)]+\)|\w+)", lambda m: format_super(m.group(1).strip("()")), text)
 
-        # Subscripts (e.g. _2, _(12))
+        # ** Subscripts (e.g. _2, _(12))
         text = re.sub(r"_(\([^\)]+\)|\w+)", lambda m: format_sub(m.group(1).strip("()")), text)
 
-        # Chemistry-style element+number (e.g., CO2 → CO₂)
+        # ** Chemistry-style element+number (e.g., CO2 → CO₂)
         text = re.sub(r"([A-Za-z]{1,2})(\d+)", lambda m: m.group(1) + format_sub(m.group(2)), text)
 
-        # Handle log base e
+        # ** Handle log base e
         text = re.sub(r"log_?e\((.*?)\)", r"ln(\1)", text)
 
         text = re.sub(
@@ -178,10 +178,10 @@ class CodexFormatter(ctk.CTkToplevel):
             text
         )
 
-        # Handle derivatives like d/dx
+        # ** Handle derivatives like d/dx
         text = re.sub(r"d/d([a-zA-Z])", r"∂/∂\1", text)
 
-        # Limits like lim{x->0}
+        # ** Limits like lim{x->0}
         # text = re.sub(r"lim_?\{?([a-zA-Z]+)->([^}]+)\}?", lambda m: f"lim{m.group(1).translate(sub_map)}→{m.group(2).translate(sub_map)}", text)
         text = re.sub(
     r"lim_?\{?\s*([a-zA-Z])\s*->\s*([^\}\s]+)\s*\}?",
@@ -195,7 +195,7 @@ class CodexFormatter(ctk.CTkToplevel):
             text
         )
 
-        # Handle determinant pattern: det((1,2),(3,4))
+        # ** Handle determinant pattern: det((1,2),(3,4))
         text = re.sub(
             r"det\(\(([^()]+)\),\(([^()]+)\)\)",
             lambda m: f"|{m.group(1)}|\n|{m.group(2)}|",
@@ -293,7 +293,7 @@ class CodexFormatter(ctk.CTkToplevel):
                 )
                 btn.pack(side="left", padx=2)
 
-        # watermark
+        # ** watermark
         ctk.CTkLabel(
             main_frame, text="⚡ Symbol Library v1.0",
             text_color=Colors.SUBTEXT, font=("Arial", 10)
@@ -314,4 +314,3 @@ def format_super(text):
 
 def format_sub(text):
     return text.translate(sub_map).replace(" ", "")
-

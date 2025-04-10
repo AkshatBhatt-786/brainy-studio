@@ -35,7 +35,6 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.backends import default_backend
 from cryptography.exceptions import InvalidKey, InvalidTag
 
-
 class PasswordDialog(ctk.CTkToplevel):
     def __init__(self, parent, mode="encrypt"):
         super().__init__(parent)
@@ -64,7 +63,7 @@ class PasswordDialog(ctk.CTkToplevel):
                     master=container,
                     text="Brainy Studio",
                     image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\logo.png")), size=(80, 80)),
-                    font=("Consolas", 14, "bold"),
+                    font=("DejaVuSansCondensed-Bold", 14, "bold"),
                     compound="top",
                     text_color=Colors.HIGHLIGHT
                 )
@@ -160,26 +159,28 @@ class QuestionFrame(ctk.CTkFrame):
         self.meta_frame.grid(row=0, column=0, sticky="ew")
         self.meta_frame.grid_columnconfigure((0,1,2,3), weight=1)
 
-        self.type_combobox = ctk.CTkComboBox(self.meta_frame, values=["MCQ", "True/False", "One Word"], command=self.update_question_type, width=120, fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER, dropdown_fg_color=Colors.Inputs.BACKGROUND, dropdown_hover_color=Colors.HIGHLIGHT, text_color=Colors.Inputs.TEXT)
+        self.type_combobox = ctk.CTkComboBox(self.meta_frame, values=["MCQ", "True/False", "One Word"], command=self.update_question_type, width=120, fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER, dropdown_fg_color=Colors.Inputs.BACKGROUND, dropdown_hover_color=Colors.HIGHLIGHT, text_color=Colors.Inputs.TEXT, font=("DejaVuSansCondensed-Bold", 14, "bold"), dropdown_font=("DejaVuSans", 14))
         self.type_combobox.grid(row=0, column=0, padx=5, pady=5, sticky="w")
 
-        self.tag_label = ctk.CTkLabel(self.meta_frame, text="Tag", text_color=Colors.Inputs.TEXT)
+        self.tag_label = ctk.CTkLabel(self.meta_frame, text="Tag", text_color=Colors.Inputs.TEXT, font=("DejaVuSansCondensed-BoldOblique", 14, "italic"))
         self.tag_label.grid(row=0, column=1, padx=5, pady=5, sticky="e")
 
         self.tag_entry = ctk.CTkEntry(self.meta_frame, placeholder_text="Tags", width=140,
+                                      font=("DejaVuSansCondensed-Bold", 14, "bold"),
                                       fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER,
                                       text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER)
         self.tag_entry.grid(row=0, column=2, padx=5, pady=5, sticky="ew")
 
-        self.marks_label = ctk.CTkLabel(self.meta_frame, text="Marks", text_color=Colors.Inputs.TEXT)
+        self.marks_label = ctk.CTkLabel(self.meta_frame, text="Marks", text_color=Colors.Inputs.TEXT, font=("DejaVuSansCondensed-BoldOblique", 14, "italic"))
         self.marks_label.grid(row=0, column=3, padx=5, pady=5, sticky="e")
 
         self.marks_entry = ctk.CTkEntry(self.meta_frame, placeholder_text="Marks", width=80,
+                                      font=("DejaVuSansCondensed-Bold", 16, "bold"),
                                       fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER,
                                       text_color=Colors.Inputs.TEXT, placeholder_text_color=Colors.Inputs.PLACEHOLDER)
         self.marks_entry.grid(row=0, column=4, padx=5, pady=5, sticky="ew")
 
-        self.question_text = ctk.CTkTextbox(self.details_frame, height=80, wrap="word",
+        self.question_text = ctk.CTkTextbox(self.details_frame, height=80, wrap="word", font=("DejaVuSans", 14),
                                       fg_color=Colors.PRIMARY, border_color=Colors.Inputs.BORDER)
         self.question_text.grid(row=1, column=0, padx=5, pady=5, sticky="ew")
 
@@ -230,7 +231,7 @@ class QuestionFrame(ctk.CTkFrame):
                 border_color=Colors.Radio.BORDER,
                 text_color=Colors.Radio.TEXT,
                 state="disabled",
-                font=("Segoe UI", 13)
+                font=("DejaVuSans", 14)
             )
             rb.pack(side="left", padx=(8, 5))
 
@@ -241,7 +242,7 @@ class QuestionFrame(ctk.CTkFrame):
                 border_width=0,
                 text_color=Colors.Inputs.BACKGROUND,
                 placeholder_text_color=Colors.Inputs.PLACEHOLDER,
-                font=("Segoe UI", 13)
+                font=("DejaVuSans", 14)
             )
             entry.pack(side="left", fill="x", expand=True, padx=(0, 8))
             entry.bind("<KeyRelease>", lambda e, idx=i: self.update_option_state(idx))
@@ -267,7 +268,7 @@ class QuestionFrame(ctk.CTkFrame):
             rb.configure(text=text,
                          state="normal",
                          text_color=Colors.Inputs.TEXT,
-                         font=("Segoe UI", 12))
+                         font=("DejaVuSans", 14))
 
             if self.correct_answer_var.get() == str(idx) and not text:
                 self.correct_answer_var.set("")
@@ -406,7 +407,7 @@ class CreatePaper(ctk.CTkFrame):
             master=control_frame,
             text="Brainy Studio",
             image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\logo.png")), size=(50, 50)),
-            font=("Consolas", 14, "bold"),
+            font=("DejaVuSansCondensed-Bold", 14, "bold"),
             compound="top",
             text_color=Colors.HIGHLIGHT
         )

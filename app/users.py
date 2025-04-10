@@ -137,10 +137,10 @@ class AuthView(ctk.CTkToplevel):
 
         ctk.CTkLabel(login_frame, text="Welcome Back!", font=("Inter", 20, "bold"), text_color=Colors.Texts.HEADERS).pack(pady=20)
 
-        self.login_username_entry = ctk.CTkEntry(login_frame, placeholder_text="Username", fg_color=Colors.PRIMARY, corner_radius=8, width=280, height=34)
+        self.login_username_entry = ctk.CTkEntry(login_frame, placeholder_text="Username", fg_color=Colors.PRIMARY, corner_radius=8, width=280, height=34, font=("DejaVuSans", 14))
         self.login_username_entry.pack(pady=5, padx=10)
 
-        self.login_password_entry = ctk.CTkEntry(login_frame, placeholder_text="Password", show="●", fg_color=Colors.PRIMARY, corner_radius=8, width=280, height=34)
+        self.login_password_entry = ctk.CTkEntry(login_frame, placeholder_text="Password", show="●", font=("DejaVuSans", 14), fg_color=Colors.PRIMARY, corner_radius=8, width=280, height=34)
         self.login_password_entry.pack(pady=5, padx=10)
 
         PrimaryButton(login_frame, text="Login", width=200, command=self.on_login).pack(pady=10)
@@ -287,7 +287,8 @@ class AuthView(ctk.CTkToplevel):
                     text_color="#FFFFFF",
                     text="",
                     fg_color="#FDEDEC",
-                    image=None
+                    image=None,
+                    font=("DejaVuSansCondensed-Bold", 12, "bold")
                 )
                 self.message_title.pack(side="left", fill="both")
 
@@ -295,7 +296,8 @@ class AuthView(ctk.CTkToplevel):
                     self.message_box,
                     text_color="#212121",
                     text="",
-                    fg_color="transparent"
+                    fg_color="transparent",
+                    font=("DejaVuSansCondensed-Bold", 12, "bold")
                 )
                 self.message_desc.pack(padx=10, pady=10, side="left")
 

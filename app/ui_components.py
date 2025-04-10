@@ -15,7 +15,14 @@
 
 
 import customtkinter as ctk
+from utils import getPath
+from reportlab.pdfbase.ttfonts import TTFont
+from reportlab.pdfbase import pdfmetrics
 
+pdfmetrics.registerFont(TTFont('DejaVuSans', getPath('assets\\fonts\\DejaVuSansCondensed.ttf')))
+pdfmetrics.registerFont(TTFont('DejaVuSans-BoldOblique', getPath('assets\\fonts\\DejaVuSans-BoldOblique.ttf')))
+pdfmetrics.registerFont(TTFont('DejaVuSansCondensed-Bold', getPath('assets\\fonts\\DejaVuSansCondensed-Bold.ttf')))
+pdfmetrics.registerFont(TTFont('DejaVuSansCondensed-BoldOblique', getPath('assets\\fonts\\DejaVuSansCondensed-Oblique.ttf')))
 
 class Colors:
 
@@ -93,6 +100,7 @@ class PrimaryButton(ctk.CTkButton):
             corner_radius=12,
             text_color="white",
             border_width=2,
+            font=("DejaVuSansCondensed-Bold", 14, "bold"),
             cursor="hand2",
             **kwargs
         )
@@ -100,7 +108,7 @@ class PrimaryButton(ctk.CTkButton):
 class ErrorButton(ctk.CTkButton):
     def __init__(self, master, text, width=200, height=50, **kwargs):
         super().__init__(master, text=text, width=width, height=height,
-                         fg_color=Colors.DANGER, border_color="#E74C3C", corner_radius=8, text_color="white", 
+                         fg_color=Colors.DANGER, border_color="#E74C3C", corner_radius=8, text_color="white", font=("DejaVuSansCondensed-Bold", 14, "bold"),
                          border_width=2, hover_color="#FFC080", cursor="hand2", **kwargs)
 
 
@@ -115,11 +123,12 @@ class IconButton(ctk.CTkButton):
         
 class SidebarButton(ctk.CTkButton):
     def __init__(self, master, **kwargs):
-        super().__init__(master, font=("Calibri", 16, "bold"),
+        super().__init__(master,
             hover_color=Colors.PRIMARY,
             fg_color=Colors.PRIMARY,
             width=20, corner_radius=12, height=38,
             text_color=Colors.Texts.BORDER,
+            font=("DejaVuSansCondensed-Bold", 14, "bold"),
             cursor="hand2", **kwargs)
 
 class LinkButton(ctk.CTkButton):
@@ -133,7 +142,7 @@ class LinkButton(ctk.CTkButton):
             width=35, height=35,
             text_color="#FFFFFF",
             cursor="hand2",
-            font=("Poppins", 16)
+            font=("DejaVuSansCondensed-Bold", 14, "bold")
         )
 
         self.bind("<Enter>", self.on_enter)
@@ -176,5 +185,6 @@ class SearchButton(ctk.CTkButton):
             border_width=2,
             hover_color="#F57C00",
             cursor="hand2",
+            font=("DejaVuSansCondensed-Bold", 14, "bold"),
             **kwargs
         )

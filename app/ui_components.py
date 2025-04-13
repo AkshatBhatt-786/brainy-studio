@@ -41,6 +41,7 @@ class Colors:
         PLACEHOLDER = "#94A3B8"  
         BORDER = "#475569" 
         SUCCESS = "#C8E6C9" 
+        MUTED = "#6c757d"
 
     class Sidebar:
         BACKGROUND = "#1E293B"
@@ -65,6 +66,7 @@ class Colors:
     class Cards:
         BACKGROUND = "#1E293B"
         BORDER = "#334155"
+        SECONDARY = "#2D3748"
     
     class Footer:
         BACKGROUND = "#0F172A"
@@ -85,6 +87,13 @@ class Colors:
         DISABLED = "#495057"           
         CHECKMARK = "#FFFFFF"        
         GLOW = "rgba(74, 144, 226, 0.2)"
+
+    class Special:
+        ERROR_TEXT = "#FF6B57"
+        HEADER_ACCENT = "#357ABD"
+        HIGHLIGHT_TEXT = "#38BDF8"
+        BULLET_POINTS = "#357ABD"
+        FOOTER_TEXT = "#7f8c8d" 
 
 
 class PrimaryButton(ctk.CTkButton):

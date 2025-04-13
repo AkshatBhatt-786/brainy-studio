@@ -37,6 +37,18 @@ class QuestionBank(ctk.CTkToplevel):
         self.sort_combobox = ctk.CTkComboBox(self.navbar, values=["Question ID", "Tags", "Marks", "Question Type"], variable=self.sort_by, fg_color="#334155", text_color="white", button_color="#6366F1", dropdown_text_color="white", corner_radius=8, command=self.sort_questions)
         self.sort_combobox.pack(side="left", padx=10, pady=10)
 
+        self.select_all_btn = ctk.CTkButton(
+            self.navbar, 
+            text="Select All", 
+            fg_color="#6366F1", 
+            hover_color="#818CF8", 
+            text_color="white", 
+            corner_radius=8, 
+            command=self.select_all
+        )
+        self.select_all_btn.pack(side="right", padx=10, pady=10)
+        # self.select_all_btn.pack(side="right", padx=10, pady=10)
+
         self.upload_btn = ctk.CTkButton(self.navbar, text="Import Excel", fg_color="#6366F1", hover_color="#818CF8", text_color="white", corner_radius=8, command=self.import_excel)
         self.upload_btn.pack(side="right", padx=10, pady=10)
 
@@ -156,3 +168,10 @@ class QuestionBank(ctk.CTkToplevel):
 
         self.parent.add_questions_from_bank(selected_questions)
         self.destroy()
+
+    def select_all(self):
+        items = self.tree.get_children()
+        if items:
+            self.tree.selection_set(items)
+        else:
+            messagebox.showinfo("No Questions", "No questions available to select.")

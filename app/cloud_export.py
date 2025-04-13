@@ -76,13 +76,13 @@ class TimePickerDialog(ctk.CTkToplevel):
             command=lambda: self._update_time("hours", 1),
             fg_color=Colors.Buttons.PRIMARY,
             hover_color=Colors.Buttons.PRIMARY_HOVER,
-            font=("Arial", 16)
+            font=("DejaVuSansCondensed-Bold", 16)
         ).pack()
 
         self.hours_label = ctk.CTkLabel(
             hours_frame, 
             text=f"{self.hours:02d}", 
-            font=("Arial", 32, "bold"), 
+            font=("DejaVuSansCondensed-Bold", 32, "bold"), 
             text_color=Colors.Texts.HEADERS
         )
         self.hours_label.pack(pady=5)
@@ -95,7 +95,7 @@ class TimePickerDialog(ctk.CTkToplevel):
             command=lambda: self._update_time("hours", -1),
             fg_color=Colors.Buttons.PRIMARY,
             hover_color=Colors.Buttons.PRIMARY_HOVER,
-            font=("Arial", 16)
+            font=("DejaVuSansCondensed-Bold", 16)
         ).pack()
 
         minutes_frame = ctk.CTkFrame(time_frame, fg_color="transparent")
@@ -109,13 +109,13 @@ class TimePickerDialog(ctk.CTkToplevel):
             command=lambda: self._update_time("minutes", 1),
             fg_color=Colors.Buttons.PRIMARY,
             hover_color=Colors.Buttons.PRIMARY_HOVER,
-            font=("Arial", 16)
+            font=("DejaVuSansCondensed-Bold", 16)
         ).pack()
 
         self.minutes_label = ctk.CTkLabel(
             minutes_frame, 
             text=f"{self.minutes:02d}", 
-            font=("Arial", 32, "bold"), 
+            font=("DejaVuSansCondensed-Bold", 32, "bold"), 
             text_color=Colors.Texts.HEADERS
         )
         self.minutes_label.pack(pady=5)
@@ -128,7 +128,7 @@ class TimePickerDialog(ctk.CTkToplevel):
             command=lambda: self._update_time("minutes", -1),
             fg_color=Colors.Buttons.PRIMARY,
             hover_color=Colors.Buttons.PRIMARY_HOVER,
-            font=("Arial", 16)
+            font=("DejaVuSansCondensed-Bold", 16)
         ).pack()
 
         self.am_pm_selector = ctk.CTkSegmentedButton(
@@ -139,7 +139,7 @@ class TimePickerDialog(ctk.CTkToplevel):
             selected_hover_color=Colors.Buttons.PRIMARY_HOVER,
             unselected_color=Colors.Inputs.BACKGROUND,
             unselected_hover_color=Colors.Sidebar.HOVER,
-            font=("Arial", 14, "bold"),
+            font=("DejaVuSansCondensed-Bold", 14, "bold"),
             text_color=Colors.Texts.HEADERS
         )
         self.am_pm_selector.pack(pady=10)
@@ -213,6 +213,12 @@ class CloudPublishUI(ctk.CTkFrame):
         self.file_path = None
         self.parsed_questions = []
         self.registration_times = None
+        self.valid_states = {
+            'file': False,
+            'title': False,
+            'subject': False,
+            'time': False
+        }
         
         self.create_widgets()
     
@@ -240,6 +246,7 @@ class CloudPublishUI(ctk.CTkFrame):
         self.update_time_label(5.0)
         self.calculate_total_marks()
         self.calculate_total_questions()
+        self.validate_subject()
         
     def update_time_label(self, value):
         self.time_duration_label.configure(text=f"{round(value, 1)} min")
@@ -260,6 +267,26 @@ class CloudPublishUI(ctk.CTkFrame):
             self.file_entry.insert(0, file_path)
             self.decrypt_file(file_path)
 
+    def validate_file(self):
+        valid = bool(self.file_entry.get())
+        self.valid_states['file'] = valid
+        self.update_status('file', valid)
+
+    def validate_title(self, *args):
+        valid = bool(self.exam_title.get().strip())
+        self.valid_states['title'] = valid
+        self.update_status('title', valid)
+
+    def validate_subject(self):
+        valid = self.subject_combo.get() != "Select Subject"
+        self.valid_states['subject'] = valid
+        self.update_status('subject', valid)
+
+    def validate_time_window(self):
+        valid = self.registration_times is not None
+        self.valid_states['time'] = valid
+        self.update_status('time', valid)
+
     def decrypt_file(self, file_path):
         pass_dialog = PasswordDialog(self, mode="decrypt")
         self.wait_window(pass_dialog)
@@ -277,136 +304,271 @@ class CloudPublishUI(ctk.CTkFrame):
                 self.parsed_questions = json.loads(decrypted_text)
                 self.calculate_total_questions()
                 self.calculate_total_marks()
+                self.validate_file()
                 messagebox.showinfo("Success", "File decrypted successfully!")
 
             except Exception as e:
                 messagebox.showerror("Error", f"Decryption failed: {str(e)}")
     
     def create_widgets(self):
-        main_frame = ctk.CTkFrame(self.master, fg_color=Colors.Cards.BACKGROUND)
-        main_frame.pack(pady=10, padx=20, fill="both", expand=True)
+        main_frame = ctk.CTkFrame(self.master, fg_color=Colors.Cards.BACKGROUND, corner_radius=12)
+        main_frame.pack(pady=20, padx=20, fill="both", expand=True)
+
+        header_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        header_frame.pack(pady=(10, 20), padx=10, fill="x")
         
         ctk.CTkLabel(
-            main_frame,
-            text="",
-            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\cloud-computing.png")), size=(50, 50)),
-            compound="top"
-        ).pack(anchor="center", padx=10, pady=10)
-
-        ctk.CTkLabel(main_frame, 
-                     text="\nExport your Exam to Cloud Exam Platform", 
-                     font=("Arial", 21, "bold")
-                     ).pack(padx=10, pady=10)
-    
-
-        file_frame = ctk.CTkFrame(main_frame, fg_color="#334155")
-        file_frame.pack(fill="x", padx=20, pady=20)
+            header_frame,
+            text="Export to Cloud Exam",
+            font=("DejaVuSansCondensed-Bold", 24, "bold"),
+            text_color=Colors.Texts.HEADERS
+        ).pack(side="left")
         
-        ctk.CTkLabel(file_frame, text="Encrypted Paper File:").pack(side="left", padx=5)
+        ctk.CTkLabel(
+            header_frame,
+            text="Powered by Cloud Exam",
+            font=("DejaVuSans-BoldOblique", 12, "italic"),
+            text_color=Colors.Texts.MUTED,
+            anchor="e"
+        ).pack(side="right")
+
+        content_frame = ctk.CTkFrame(main_frame, fg_color="transparent")
+        content_frame.pack(fill="both", expand=True, padx=20, pady=10)
+
+        left_column = ctk.CTkFrame(content_frame, fg_color="transparent")
+        left_column.grid(row=0, column=0, sticky="nsew", padx=10, pady=5)
+
+        file_card = ctk.CTkFrame(left_column, fg_color=Colors.Cards.SECONDARY, corner_radius=8)
+        file_card.pack(fill="x", pady=5, padx=5)
+        
+        ctk.CTkLabel(file_card, 
+                    text="STEP 1: Select Encrypted Paper", 
+                    font=("DejaVuSansCondensed-Bold", 14, "bold"),
+                    text_color=Colors.Texts.HEADERS).pack(anchor="w", pady=(10, 15), padx=10)
+        
+        file_input_frame = ctk.CTkFrame(file_card, fg_color="transparent")
+        file_input_frame.pack(fill="x", padx=10, pady=(0, 10))
+        
         self.file_entry = ctk.CTkEntry(
-            file_frame, 
+            file_input_frame,
             placeholder_text="Select .enc file",
-            width=300
+            width=300,
+            fg_color=Colors.Inputs.BACKGROUND,
+            border_color=Colors.Inputs.BORDER
         )
-        self.file_entry.pack(side="left", padx=5, fill="x", expand=True)
+        self.file_entry.pack(side="left", fill="x", expand=True, padx=(0, 10))
         
         PrimaryButton(
-            master=file_frame, 
+            master=file_input_frame, 
             text="Browse", 
             command=self.select_file, 
-            width=120,
-            height=42
-        ).pack(side="left", pady=10, padx=5)
+            width=100,
+            height=38
+        ).pack(side="left")
 
-        subject_frame = ctk.CTkFrame(main_frame, fg_color=Colors.Cards.BACKGROUND)
-        subject_frame.pack(fill="x", padx=10, pady=10)
+        title_card = ctk.CTkFrame(left_column, fg_color=Colors.Cards.SECONDARY, corner_radius=8)
+        title_card.pack(fill="x", pady=5, padx=5)
         
-        ctk.CTkLabel(subject_frame, text="Subject Code:").pack(side="left", padx=5)
-        self.subject_combo = ctk.CTkComboBox(
-            subject_frame,
-            values=self.get_subject_codes(),
-            width=200,
+        ctk.CTkLabel(title_card, 
+                    text="STEP 2: Exam Details", 
+                    font=("DejaVuSansCondensed-Bold", 14, "bold"),
+                    text_color=Colors.Texts.HEADERS).pack(anchor="w", pady=(10, 15), padx=10)
+        
+        ctk.CTkLabel(title_card, text="Exam Title:").pack(anchor="w", padx=10)
+        self.exam_title = ctk.CTkEntry(
+            title_card,
+            placeholder_text="Enter Exam Title",
             fg_color=Colors.Inputs.BACKGROUND,
-            text_color=Colors.Inputs.TEXT,
+            border_color=Colors.Inputs.BORDER
+        )
+        self.exam_title.pack(fill="x", padx=10, pady=(0, 15))
+        self.exam_title_var = ctk.StringVar()
+        self.exam_title.configure(textvariable=self.exam_title_var)
+        self.exam_title_var.trace_add('write', self.validate_title)
+
+        subject_card = ctk.CTkFrame(left_column, fg_color=Colors.Cards.SECONDARY, corner_radius=8)
+        subject_card.pack(fill="x", pady=5, padx=5)
+        
+        subject_header = ctk.CTkFrame(subject_card, fg_color="transparent")
+        subject_header.pack(fill="x", padx=10, pady=(10, 0))
+        
+        ctk.CTkLabel(subject_header, text="Subject Code:").pack(side="left")
+        self.manage_subjects = LinkButton(subject_header, 
+                 text="Manage Subjects", 
+                 command=lambda: SubjectManagerUI(self.parent, self))
+        self.manage_subjects.pack(side="right")
+        self.manage_subjects.configure(fg_color=Colors.Cards.SECONDARY)
+        
+        self.subject_combo = ctk.CTkComboBox(
+            subject_card,
+            values=self.get_subject_codes(),
+            fg_color=Colors.Inputs.BACKGROUND,
             border_color=Colors.Inputs.BORDER,
+            button_color=Colors.Buttons.PRIMARY,
+            dropdown_fg_color=Colors.Cards.SECONDARY,
             command=self.update_subject_details
         )
-        self.subject_combo.pack(side="left", padx=5)
-        self.subject_combo.set("---SELECT---")
+        self.subject_combo.set("Select Subject")
+        self.subject_combo.pack(fill="x", padx=10, pady=(0, 10))
+        self.subject_combo.bind("<<ComboboxSelected>>", lambda e: self.validate_subject())
+        
 
-        LinkButton(subject_frame, text="update database", command=lambda parent=self.parent, frame=self: SubjectManagerUI(parent, frame)).pack(side="left", padx=10)
-
-        details_frame = ctk.CTkFrame(main_frame, fg_color=Colors.Cards.BACKGROUND)
-        details_frame.pack(fill="x", padx=10, pady=10)
+        # Subject Details Section
+        details_card = ctk.CTkFrame(left_column, fg_color=Colors.Cards.SECONDARY, corner_radius=8)
+        details_card.pack(fill="x", pady=5, padx=5)
+        
+        ctk.CTkLabel(details_card, 
+                    text="Subject Information", 
+                    font=("DejaVuSansCondensed-Bold", 14, "bold"),
+                    text_color=Colors.Texts.HEADERS).pack(anchor="w", pady=(10, 15), padx=10)
+        
+        details_grid = ctk.CTkFrame(details_card, fg_color="transparent")
+        details_grid.pack(padx=10, pady=(0, 10), fill="x")
+    
+        details_grid.columnconfigure(0, weight=1)
+        details_grid.columnconfigure(1, weight=2)
+        
+        details_fields = [
+            ("Subject Name:", "subject_name"),
+            ("Total Questions:", "total_questions"),
+            ("Total Marks:", "total_marks"),
+            ("Exam Date:", "exam_date"),
+            ("Time per Question:", "time_per_question"),
+            ("Registration Window:", "registration_window")
+        ]
+        
         self.detail_labels = {}
+        for row, (label_text, key) in enumerate(details_fields):
+            ctk.CTkLabel(details_grid, 
+                        text=label_text, 
+                        text_color=Colors.Texts.MUTED
+                        ).grid(row=row, column=0, sticky="w", padx=5, pady=2)
+            
+            if key == "exam_date":
+                self.subject_date_picker = DateEntry(
+                    details_grid,
+                    date_pattern='yyyy-mm-dd',
+                    mindate=datetime.date.today(),
+                    background=Colors.Buttons.PRIMARY,
+                    foreground='white',
+                    bordercolor=Colors.Inputs.BORDER
+                )
+                self.subject_date_picker.grid(row=row, column=1, sticky="ew", padx=5, pady=2)
+            elif key == "time_per_question":
+                time_frame = ctk.CTkFrame(details_grid, fg_color="transparent")
+                time_frame.grid(row=row, column=1, sticky="ew", padx=5, pady=2)
+                
+                self.time_duration_slider = ctk.CTkSlider(
+                    time_frame,
+                    from_=1,
+                    to=10,
+                    number_of_steps=18,
+                    command=self.update_time_label,
+                    fg_color=Colors.Inputs.BACKGROUND,
+                    button_color=Colors.Buttons.PRIMARY,
+                    progress_color=Colors.Buttons.PRIMARY_HOVER
+                )
+                self.time_duration_slider.set(5.0)
+                self.time_duration_slider.pack(side="left", fill="x", expand=True, padx=(0, 10))
+                
+                self.time_duration_label = ctk.CTkLabel(
+                    time_frame, 
+                    text="5.0 min",
+                    width=60
+                )
+                self.time_duration_label.pack(side="left")
+            elif key == "registration_window":
+                reg_frame = ctk.CTkFrame(details_grid, fg_color="transparent")
+                reg_frame.grid(row=row, column=1, sticky="ew", padx=5, pady=2)
+                
+                self.registration_time_label = ctk.CTkLabel(
+                    reg_frame, 
+                    text="Not Set",
+                    text_color=Colors.Texts.MUTED
+                )
+                self.registration_time_label.pack(side="left", padx=(0, 10))
+                
+                PrimaryButton(
+                    reg_frame,
+                    text="Set Time",
+                    command=self.set_registration_time,
+                    width=100,
+                    height=32
+                ).pack(side="left")
+            else:
+                self.detail_labels[key] = ctk.CTkLabel(
+                    details_grid,
+                    text="N/A",
+                    text_color=Colors.Texts.FIELDS
+                )
+                self.detail_labels[key].grid(row=row, column=1, sticky="w", padx=5, pady=2)
 
-        ctk.CTkLabel(details_frame, text="Subject Name:").grid(row=0, column=0, sticky="w", padx=5, pady=5)
-        self.detail_labels['subject_name'] = ctk.CTkLabel(details_frame, text="")
-        self.detail_labels['subject_name'].grid(row=0, column=1, sticky="w", padx=5, pady=5)
+        right_column = ctk.CTkFrame(content_frame, fg_color="transparent")
+        right_column.grid(row=0, column=1, sticky="nsew", padx=10, pady=5)
 
-        ctk.CTkLabel(details_frame, text="Total Questions:").grid(row=1, column=0, sticky="w", padx=5, pady=5)
-        self.detail_labels['total_questions'] = ctk.CTkLabel(details_frame, text="0")
-        self.detail_labels['total_questions'].grid(row=1, column=1, sticky="w", padx=5, pady=5)
-
-        ctk.CTkLabel(details_frame, text="Total Marks:").grid(row=2, column=0, sticky="w", padx=5, pady=5)
-        self.detail_labels['total_marks'] = ctk.CTkLabel(details_frame, text="0")
-        self.detail_labels['total_marks'].grid(row=2, column=1, sticky="w", padx=5, pady=5)
-
-        ctk.CTkLabel(details_frame, text="Exam Date:").grid(row=3, column=0, sticky="w", padx=5, pady=5)
-        self.subject_date_picker = DateEntry(
-            details_frame, 
-            date_pattern='yyyy-mm-dd', 
-            mindate=datetime.date.today())
-        self.subject_date_picker.grid(row=3, column=1, sticky="w", padx=5, pady=5)
-
-        ctk.CTkLabel(details_frame, text="Time per Question:").grid(row=4, column=0, sticky="w", padx=5, pady=5)
-        time_duration_frame = ctk.CTkFrame(details_frame, fg_color="transparent")
-        time_duration_frame.grid(row=4, column=1, sticky="ew", padx=5, pady=5)
+        upload_card = ctk.CTkFrame(right_column, fg_color=Colors.Cards.SECONDARY, corner_radius=8)
+        upload_card.pack(fill="both", expand=True, pady=5, padx=5)
         
-        self.time_duration_slider = ctk.CTkSlider(
-            time_duration_frame, 
-            from_=1, 
-            to=10, 
-            number_of_steps=18, 
-            command=self.update_time_label,
-            width=200
-        )
-        self.time_duration_slider.set(5.0)
-        self.time_duration_slider.pack(side="left", padx=5)
-        self.time_duration_label = ctk.CTkLabel(time_duration_frame, text="5.0 min")
-        self.time_duration_label.pack(side="left", padx=5)
-
-        ctk.CTkLabel(details_frame, text="Registration Window:").grid(row=5, column=0, sticky="w", padx=5, pady=5)
-        reg_time_frame = ctk.CTkFrame(details_frame, fg_color="transparent")
-        reg_time_frame.grid(row=5, column=1, sticky="w", padx=5, pady=5)
+        ctk.CTkLabel(upload_card, 
+                    text="Ready to Publish", 
+                    font=("DejaVuSansCondensed-Bold", 14, "bold"),
+                    text_color=Colors.Texts.HEADERS).pack(pady=(20, 15))
         
-        self.registration_time_label = ctk.CTkLabel(reg_time_frame, text="Not Set")
-        self.registration_time_label.pack(side="left", padx=5)
+        ctk.CTkLabel(upload_card, 
+                    text="Review your settings before publishing to the cloud platform",
+                    text_color=Colors.Texts.MUTED,
+                    wraplength=250).pack(pady=(0, 20), padx=20)
         
         PrimaryButton(
-            reg_time_frame, 
-            text="Set Time", 
-            command=self.set_registration_time,
-            width=120,
-            height=42
-        ).pack(side="left", padx=5)
-
-        submit_frame = ctk.CTkFrame(main_frame, fg_color=Colors.Cards.BACKGROUND)
-        submit_frame.pack(fill="x", pady=5)
-
-        PrimaryButton(
-            submit_frame,
-            text="Upload",
+            upload_card,
+            text="Publish Exam",
             command=self.export_to_dropbox,
-            width=120,
-            height=42
-        ).pack(anchor="center", padx=5)
+            width=200,
+            height=45
+        ).pack(pady=(0, 20))
 
-        ctk.CTkLabel(main_frame, 
-                     text="Powered by Cloud Exam", 
-                     font=("Consolas", 16, "bold"),
-                     image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\cloud_logo.png")), size=(80, 80)),
-                     compound="right").pack(anchor="w", padx=10, pady=10)
+        status_frame = ctk.CTkFrame(right_column, fg_color=Colors.Cards.SECONDARY, corner_radius=8)
+        status_frame.pack(fill="x", pady=5, padx=5)
+        
+        ctk.CTkLabel(status_frame, 
+                    text="Validation Checks", 
+                    font=("DejaVuSansCondensed-Bold", 14, "bold"),
+                    text_color=Colors.Texts.HEADERS).pack(anchor="w", pady=(10, 5), padx=10)
+        
+        self.status_labels = {
+            'file': self.create_status_row(status_frame, "Paper file selected"),
+            'title': self.create_status_row(status_frame, "Exam title set"),
+            'subject': self.create_status_row(status_frame, "Subject selected"),
+            'time': self.create_status_row(status_frame, "Registration window set")
+        }
+
+        # Configure grid weights
+        content_frame.columnconfigure(0, weight=3)
+        content_frame.columnconfigure(1, weight=2)
+        self.master.update_idletasks()
+
+    def create_status_row(self, parent, text):
+        frame = ctk.CTkFrame(parent, fg_color="transparent")
+        frame.pack(fill="x", padx=10, pady=2)
+        
+        dot = ctk.CTkLabel(frame, text="●", text_color=Colors.Special.ERROR_TEXT, width=20)
+        dot.pack(side="left")
+        
+        label = ctk.CTkLabel(frame, text=text, text_color=Colors.Texts.MUTED)
+        label.pack(side="left", fill="x", expand=True)
+        
+        return (dot, label)
+
+    def update_status(self, key, valid):
+        color = Colors.SUCCESS if valid else Colors.Special.ERROR_TEXT
+        self.status_labels[key][0].configure(text_color=color)
+        self.status_labels[key][1].configure(
+            text_color=Colors.Texts.FIELDS if valid else Colors.Texts.MUTED
+        )
+        if valid:
+            self.status_labels[key][0].configure(font=("DejaVuSansCondensed-Bold", 12, "bold"))
+        else:
+            self.status_labels[key][0].configure(font=("DejaVuSansCondensed-Bold", 12))
 
     def set_registration_time(self):
         start_time_str = TimePickerDialog.get_time(self.parent)
@@ -450,6 +612,8 @@ class CloudPublishUI(ctk.CTkFrame):
         self.wait_window(duration_dialog)
         
         if selected_duration.get() == 0:
+            messagebox.showwarning("Warning", "Duration not selected")
+            self.registration_times = None
             return
     
         start_h, start_m = map(int, start_time_str.split(':'))
@@ -464,6 +628,7 @@ class CloudPublishUI(ctk.CTkFrame):
             text=f"{self.registration_times[0]} - {self.registration_times[1]}",
             text_color=Colors.Texts.FIELDS
         )
+        self.validate_time_window()
 
     @staticmethod
     def generate_exam_id():
@@ -523,6 +688,20 @@ class CloudPublishUI(ctk.CTkFrame):
 
 
     def export_to_dropbox(self):
+        if not all(self.valid_states.values()):
+            missing = [k for k, v in self.valid_states.items() if not v]
+            messagebox.showerror("Validation Error", 
+                               f"Missing required fields:\n- {', '.join(missing)}")
+            return
+
+        if not self.parsed_questions:
+            messagebox.showerror("Error", "No questions loaded!")
+            return
+        
+        if not self.registration_times or len(self.registration_times) != 2:
+            messagebox.showerror("Error", "Registration time window not set!")
+            return
+        
         total_duration = round(self.time_duration_slider.get() * len(self.parsed_questions), 1)
         instructions = self.db_manager.get_instructions(self.subject_combo.get()).split("\n")
         questions = self.remove_correct_answers(self.parsed_questions)
@@ -530,6 +709,10 @@ class CloudPublishUI(ctk.CTkFrame):
         questions_blueprint = self.create_question_id_mapping(self.parsed_questions)
         access_code = self.generate_access_code()
         exam_id = self.generate_exam_id()
+        exam_title = self.exam_title.get().upper()
+        if exam_title == "":
+            messagebox.showerror("Validation Error", "Exam title cannot be empty!")
+            return
 
         exam_paper = {
             "brainy-studio": {
@@ -551,7 +734,8 @@ class CloudPublishUI(ctk.CTkFrame):
                 "exam_start_time": self.registration_times[1],
                 "instructions": instructions,
                 "subject_date": self.subject_date_picker.get_date().strftime("%d-%m-%Y"),
-                "total_marks": self.detail_labels["total_marks"].cget("text")
+                "total_marks": self.detail_labels["total_marks"].cget("text"),
+                "exam_title": exam_title
             },
             "questions": questions,
             "question-mapping": questions_blueprint,
@@ -566,6 +750,8 @@ class CloudPublishUI(ctk.CTkFrame):
 
         with open(DBX_PATH, "r") as f:
             data = json.load(f)
+
+        print(access_code, exam_id)
 
         access_token = data["access_token"]
         app_key = data["app_key"]

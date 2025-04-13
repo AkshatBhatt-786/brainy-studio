@@ -431,7 +431,7 @@ class CreatePaper(ctk.CTkFrame):
         self.search_input.pack(side="left", padx=5, expand=True)
         self.search_input.bind("<KeyRelease>", lambda e: self.perform_search())
         # self.search_input.pack_propagate(False)
-        SearchButton(search_frame, text="", image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\search.png")), size=(30, 30)), command=self.perform_search,width=110, height=42).pack(side="left", padx=5)  
+        # SearchButton(search_frame, text="", image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\search.png")), size=(30, 30)), command=self.perform_search,width=110, height=42).pack(side="left", padx=5)  
 
         self.workspace = ctk.CTkScrollableFrame(self, scrollbar_button_color=Colors.PRIMARY, fg_color="transparent", width=800, height=600)
         self.workspace.pack(fill="both", expand=True)

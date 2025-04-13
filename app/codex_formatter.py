@@ -92,14 +92,14 @@ class CodexFormatter(ctk.CTkToplevel):
         self._position_widgets()
 
     def _create_widgets(self):
-        self.title_label = ctk.CTkLabel(self, text="Codex Formatter", font=("Arial", 24, "bold"), text_color=Colors.TEXT)
+        self.title_label = ctk.CTkLabel(self, text="Codex Formatter", font=("DejaVuSansCondensed-Bold", 24, "bold"), text_color=Colors.TEXT)
         self.input_entry = ctk.CTkEntry(self, placeholder_text="Enter math expression (e.g., x^2 + 3_1 → ∞)", width=680, height=50, font=("Consolas", 18), fg_color=Colors.SECONDARY, border_color=Colors.BORDER, text_color=Colors.TEXT)
         self.output_entry = ctk.CTkEntry(self, placeholder_text="Formatted output will appear here", width=680, height=50, font=("Consolas", 18), fg_color=Colors.SECONDARY, border_color=Colors.BORDER, text_color=Colors.TEXT)
-        self.format_btn = ctk.CTkButton(self, text="Format Expression", command=self.format_expression, fg_color=Colors.ACCENT, hover_color=Colors.HIGHLIGHT, font=("Arial", 14, "bold"), height=40)
-        self.copy_btn = ctk.CTkButton(self, text="Copy to Clipboard", command=self.copy_to_clipboard, fg_color=Colors.SUCCESS, hover_color="#059669", font=("Arial", 14), height=40)
+        self.format_btn = ctk.CTkButton(self, text="Format Expression", command=self.format_expression, fg_color=Colors.ACCENT, hover_color=Colors.HIGHLIGHT, font=("DejaVuSansCondensed-Bold", 14, "bold"), height=40)
+        self.copy_btn = ctk.CTkButton(self, text="Copy to Clipboard", command=self.copy_to_clipboard, fg_color=Colors.SUCCESS, hover_color="#059669", font=("DejaVuSansCondensed-Bold", 14), height=40)
         self.extras_btn = ctk.CTkButton(
             self, text="View Extra Symbols", command=self.show_extra_symbols,
-            fg_color=Colors.WARNING, hover_color="#D97706", font=("Arial", 14), height=40
+            fg_color=Colors.WARNING, hover_color="#D97706", font=("DejaVuSansCondensed-Bold", 14), height=40
         )
 
         self.symbol_frame = ctk.CTkFrame(self, fg_color=Colors.CARD, border_color=Colors.BORDER, border_width=2)
@@ -125,7 +125,7 @@ class CodexFormatter(ctk.CTkToplevel):
         for col, (title, syms) in enumerate(categories.items()):
             frame = ctk.CTkFrame(self.symbol_frame, fg_color="transparent")
             frame.grid(row=0, column=col, padx=10, pady=10, sticky="nsew")
-            ctk.CTkLabel(frame, text=title, font=("Arial", 12, "bold"), text_color=Colors.SUBTEXT).pack(pady=5)
+            ctk.CTkLabel(frame, text=title, font=("DejaVuSansCondensed-Bold", 12, "bold"), text_color=Colors.SUBTEXT).pack(pady=5)
 
             for sym in syms:
                 btn = ctk.CTkButton(
@@ -133,7 +133,7 @@ class CodexFormatter(ctk.CTkToplevel):
                     command=lambda s=sym: self.insert_symbol(s),
                     fg_color=Colors.SECONDARY,
                     hover_color=Colors.ACCENT,
-                    font=("Arial", 14)
+                    font=("DejaVuSansCondensed-Bold", 14)
                 )
                 btn.pack(pady=2)
 
@@ -271,7 +271,7 @@ class CodexFormatter(ctk.CTkToplevel):
             # Category header
             ctk.CTkLabel(
                 cat_frame, text=cat_name,
-                font=("Arial", 14, "bold"),
+                font=("DejaVuSansCondensed-Bold", 14, "bold"),
                 text_color=Colors.TEXT
             ).pack(anchor="w", padx=10, pady=(8, 12))
 
@@ -287,7 +287,7 @@ class CodexFormatter(ctk.CTkToplevel):
 
                 btn = ctk.CTkButton(
                     row_frame, text=sym, width=50, height=40,
-                    font=("Arial", 16), corner_radius=6,
+                    font=("DejaVuSansCondensed-Bold", 16), corner_radius=6,
                     fg_color=Colors.PRIMARY, hover_color=Colors.ACCENT,
                     command=lambda s=sym: self.insert_symbol_from_popup(s, window)
                 )
@@ -296,7 +296,7 @@ class CodexFormatter(ctk.CTkToplevel):
         # ** watermark
         ctk.CTkLabel(
             main_frame, text="⚡ Symbol Library v1.0",
-            text_color=Colors.SUBTEXT, font=("Arial", 10)
+            text_color=Colors.SUBTEXT, font=("DejaVuSansCondensed-Bold", 10)
             ).pack(side="bottom", pady=5)
 
     def insert_symbol_from_popup(self, symbol, popup):

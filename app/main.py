@@ -19,6 +19,7 @@ from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 import threading
 import customtkinter as ctk
+from tkinter import messagebox
 from utils import getPath, centerWindow
 from ui_components import Colors, IconButton, SidebarButton
 from PIL import Image
@@ -512,6 +513,11 @@ class BrainyStudioApp(ctk.CTk):
             self.edit_page.pack(padx=10, pady=10, anchor="center")
 
         if page_name == "cloud-expo":
+            firebase_config, dropbox_config = os.getenv("FIREBASE_CONFIG"), os.getenv("DBX_BACKEND")
+            if firebase_config is None or dropbox_config is None:
+                messagebox.showinfo("Environment Not Configured", "This feature requires specific environments that are not detected in the system PATH.\nAccess is restricted until all required environments are properly configured.\n\nPlease contact the developer for assistance or configuration support.")
+                self.redirect("home-page")
+                return
             self.title("Export to Cloud")
             self.cloud_page = CloudPublishUI(self.main_content, parent=self, subject_db=subject_db)
 

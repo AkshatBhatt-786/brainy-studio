@@ -33,14 +33,13 @@ def centerWindow(parent: ctk.CTk, width: int, height: int, scale_factor: float =
     scaled_height = y + variation[1]
     return f"{width}x{height}+{scaled_width}+{scaled_height}"
 
-
-def getPath(filepath):
+def getPath(*args):
     try:
-        base_path = sys._MEIPASS
+        base_path = sys._MEIPASS  # PyInstaller temp folder
     except AttributeError:
-        base_path = os.path.abspath("")
+        base_path = os.path.dirname(os.path.abspath(__file__))
     
-    return os.path.join(base_path, filepath)
+    return os.path.join(base_path, *args)
 
 
 def restartApplication():

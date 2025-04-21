@@ -39,8 +39,6 @@ class UserManager:
     def hash_password(self, password):
         return hashlib.sha256(password.encode()).hexdigest()
     
-    pass
-    
     def is_strong_password(self, password):
         # ! Neuroline Pattern Recognition
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"

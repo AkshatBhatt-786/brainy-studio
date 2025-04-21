@@ -33,13 +33,22 @@ def centerWindow(parent: ctk.CTk, width: int, height: int, scale_factor: float =
     scaled_height = y + variation[1]
     return f"{width}x{height}+{scaled_width}+{scaled_height}"
 
+# def getPath(*args):
+#     try:
+#         base_path = sys._MEIPASS  # PyInstaller temp folder
+#     except AttributeError:
+#         base_path = os.path.dirname(os.path.abspath(__file__))
+    
+#     return os.path.join(base_path, *args)
+
 def getPath(*args):
-    try:
-        base_path = sys._MEIPASS  # PyInstaller temp folder
-    except AttributeError:
+    if getattr(sys, 'frozen', False):  # App is frozen via cx_Freeze
+        base_path = sys._MEIPASS if hasattr(sys, '_MEIPASS') else os.path.dirname(sys.executable)
+    else:
         base_path = os.path.dirname(os.path.abspath(__file__))
     
     return os.path.join(base_path, *args)
+
 
 
 def restartApplication():

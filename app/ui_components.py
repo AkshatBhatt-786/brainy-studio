@@ -1,28 +1,3 @@
-# ==========================================================
-#  * Project : Brainy Studio - Question Paper Generator
-#  * Author  : Bhatt Akshat S
-#  * Updated : 04-03-2025
-#  * Version : 1.0.2
-#  * License : MIT License
-#  * GitHub  : https://github.com/AkshatBhatt-786/brainy-studio/tree/main/app/ui_components.py
-#  * Description:
-#       This script handles the Colors, Themes and UI components
-#  ^ Credits | References:
-#  & Stack Overflow (https://stackoverflow.com/q/1234567)
-#  & Python Docs (https://docs.python.org/3/library/)
-#  & CustomTkinter Docs (https://customtkinter.tomschimansky.com/)
-# ==========================================================
-
-
-import customtkinter as ctk
-from utils import getPath
-from reportlab.pdfbase.ttfonts import TTFont
-from reportlab.pdfbase import pdfmetrics
-
-pdfmetrics.registerFont(TTFont('DejaVuSans', getPath('assets\\fonts\\DejaVuSansCondensed.ttf')))
-pdfmetrics.registerFont(TTFont('DejaVuSans-BoldOblique', getPath('assets\\fonts\\DejaVuSans-BoldOblique.ttf')))
-pdfmetrics.registerFont(TTFont('DejaVuSansCondensed-Bold', getPath('assets\\fonts\\DejaVuSansCondensed-Bold.ttf')))
-pdfmetrics.registerFont(TTFont('DejaVuSansCondensed-BoldOblique', getPath('assets\\fonts\\DejaVuSansCondensed-Oblique.ttf')))
 
 class Colors:
 

@@ -412,8 +412,6 @@ class CloudPublishUI(ctk.CTkFrame):
         self.subject_combo.pack(fill="x", padx=10, pady=(0, 10))
         self.subject_combo.bind("<<ComboboxSelected>>", lambda e: self.validate_subject())
         
-
-        # Subject Details Section
         details_card = ctk.CTkFrame(left_column, fg_color=Colors.Cards.SECONDARY, corner_radius=8)
         details_card.pack(fill="x", pady=5, padx=5)
         
@@ -753,10 +751,10 @@ class CloudPublishUI(ctk.CTkFrame):
 
         print(access_code, exam_id)
 
-        access_token = data["access_token"]
+        access_token = data["refresh_token"]
         app_key = data["app_key"]
         app_secret = data["app_secret"]
-        dbx_backend = DropboxBackend(access_token=access_token, app_key=app_key, app_secret=app_secret, root_path=getPath(r"database\CloudDB"))
+        dbx_backend = DropboxBackend(refresh_token=access_token, app_key=app_key, app_secret=app_secret, root_path=getPath(r"database\CloudDB"))
         try:
             upload_file = dbx_backend.upload_file(file_path, f"/uploads/{exam_id}.enc")
             if upload_file:

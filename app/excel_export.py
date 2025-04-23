@@ -13,12 +13,16 @@ from utils import getPath
 import os
 from PIL import Image
 import base64
+import xlsxwriter
 import json
+from firebase_backend import FirebaseBackend
 
 class ExportToExcelUI(ctk.CTkFrame):
     def __init__(self, master, parent, container):
         super().__init__(master)
         self.parent = parent
+        self.backend = FirebaseBackend()
+        self.db = self.backend.db
         self.parent.title("Export to Excel")
         self.configure(fg_color="#0F172A")
         self.parsed_questions = []
@@ -28,36 +32,85 @@ class ExportToExcelUI(ctk.CTkFrame):
     
 
     def create_widgets(self):
+        # === Header Section ===
         header_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        header_frame.pack(pady=10, padx=20, fill="x")
-
-        ctk.CTkLabel(header_frame, text="\nGenerate Your Questions to Excel Format!\n", font=("Arial", 21, "bold"),
-                     image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\excel.png")), size=(50, 50)), compound="top").pack(padx=10, pady=10)
-        
-        file_frame = ctk.CTkFrame(self.main_frame, fg_color="#334155", corner_radius=8)
-        file_frame.pack(padx=20, pady=20, anchor="center", fill="x")
-        
-        self.file_entry = ctk.CTkEntry(file_frame, placeholder_text="Select encrypted paper file")
-        self.file_entry.pack(side="left", padx=10, pady=10, fill="x", expand=True)
-        
+        header_frame.pack(pady=20, padx=20, fill="x")
+    
+        ctk.CTkLabel(
+            header_frame,
+            text="Brainy Studio\nGenerate Your Questions to Excel Format!",
+            font=("Segoe UI", 24, "bold"),
+            text_color="#f8fafc",
+            compound="top",
+            image=ctk.CTkImage(light_image=Image.open(getPath("assets\\images\\excel.png")), size=(50, 50))
+        ).pack(pady=(0, 10), anchor="center")
+    
+        # === Tab Section ===
+        tabview = ctk.CTkTabview(self.main_frame, fg_color="#1e293b", segmented_button_selected_color="#0ea5e9")
+        tabview.pack(padx=20, pady=10, fill="both", expand=True)
+    
+        # === Local File Tab ===
+        tab1 = tabview.add("Local Question Bank File")
+        local_file_frame = ctk.CTkFrame(tab1, fg_color="#1e293b", corner_radius=12)
+        local_file_frame.pack(padx=20, pady=20, fill="x", expand=True)
+    
+        ctk.CTkLabel(local_file_frame, text="Choose Encrypted File:", text_color="white", font=("Segoe UI", 14)).pack(anchor="w", padx=10, pady=(10, 0))
+    
+        file_input_frame = ctk.CTkFrame(local_file_frame, fg_color="transparent")
+        file_input_frame.pack(padx=10, pady=10, fill="x")
+    
+        self.file_entry = ctk.CTkEntry(file_input_frame, placeholder_text="Select encrypted paper file",           width=300, fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER)
+        self.file_entry.pack(side="left", padx=(0, 10), fill="x", expand=True)
+    
         PrimaryButton(
-            master=file_frame, 
-            text="Browse", 
+            master=file_input_frame,
+            text="Browse",
             command=lambda: self.select_file(),
-            width=180,
-            height=32
-        ).pack(side="left", padx=10)
-
+            width=140,
+            height=36
+        ).pack(side="left")
+    
+        # === Cloud Export Tab ===
+        tab2 = tabview.add("Cloud Exam Reports")
+        cloud_frame = ctk.CTkFrame(tab2, fg_color="#1e293b", corner_radius=12)
+        cloud_frame.pack(padx=20, pady=20, fill="x", expand=True)
+    
+        ctk.CTkLabel(cloud_frame, text="Enter Exam ID:", text_color="white", font=("Segoe UI", 14)).pack(anchor="w", padx=10, pady=(10, 0))
+    
+        cloud_input_frame = ctk.CTkFrame(cloud_frame, fg_color="transparent")
+        cloud_input_frame.pack(padx=10, pady=10, fill="x")
+    
+        self.cloud_exam_id_entry = ctk.CTkEntry(cloud_input_frame, placeholder_text="e.g., #BS0786",        width=300, fg_color=Colors.Inputs.BACKGROUND, border_color=Colors.Inputs.BORDER)
+        self.cloud_exam_id_entry.pack(side="left", padx=(0, 10), fill="x", expand=True)
+    
+        PrimaryButton(
+            master=cloud_input_frame,
+            text="Fetch from Cloud",
+            command=lambda: self.fetch_cloud_results(),
+            width=160,
+            height=36
+        ).pack(side="left")
+    
+        # === Convert Button Section ===
         btn_frame = ctk.CTkFrame(self.main_frame, fg_color="transparent")
-        btn_frame.pack(pady=20)
-        
+        btn_frame.pack(pady=30)
+    
         excel_btn = PrimaryButton(
             master=btn_frame,
-            text="Convert to Excel",
+            text="🚀 Convert to Excel",
             command=lambda: self.process_data(),
-        )
+            width=220,
+            height=48
+       )
         excel_btn.pack(anchor="center", padx=10)
-        excel_btn.configure(fg_color=Colors.SUCCESS, border_color=Colors.Buttons.SUCCESS_BORDER, hover_color=Colors.Buttons.SUCCESS_HOVER, text_color=Colors.Texts.SUCCESS)
+    
+        excel_btn.configure(
+            fg_color=Colors.SUCCESS,
+            border_color=Colors.Buttons.SUCCESS_BORDER,
+            hover_color=Colors.Buttons.SUCCESS_HOVER,
+            text_color=Colors.Texts.SUCCESS
+        )
+
     
     def select_file(self):
         file_path = filedialog.askopenfilename(filetypes=[("Encrypted Files", "*.enc")])
@@ -153,6 +206,132 @@ class ExportToExcelUI(ctk.CTkFrame):
                 "Processing Error",
                 f"Failed to process questions:\n{type(e).__name__}: {str(e)}"
             )
+
+    def fetch_cloud_results(self):
+        exam_id = self.cloud_exam_id_entry.get().strip()
+        if not exam_id:
+            messagebox.showwarning("Input Error", "Please enter Exam ID")
+            return
+
+        try:
+            exam_ref = self.db.collection("exams").document(exam_id)
+            exam_doc = exam_ref.get()
+            if not exam_doc.exists:
+                raise ValueError(f"Exam {exam_id} not found")
+            exam_data = exam_doc.to_dict()
+            subject_details = exam_data.get('subject_details', {})
+            total_marks = int(subject_details.get('total_marks', 0))
+            students_data = exam_data.get('students', {})
+
+            self.parsed_results = []
+            for enrollment_no, student_data in students_data.items():
+                self.parsed_results.append({
+                    "enrollment_no": enrollment_no,
+                    "marks_obtained": student_data.get('total_score', 0),
+                    "total_marks": total_marks,
+                    "negative_marks": student_data.get('marks_wrong', 0),
+                    "not_attempted": student_data.get('not_attempted', 0)
+                })
+
+            approval = messagebox.askyesno("Success", f"Processed {len(self.parsed_results)} student results!")
+            if approval:
+                sub_name = subject_details.get("subject_name")
+                sub_date = subject_details.get("subject_date")
+                title = sub_name + " | " + sub_date + " | " + "Result"
+                self.process_result_data(title)
+
+        except Exception as e:
+            messagebox.showerror("Cloud Error", f"Fetch failed: {str(e)}")
+            self.parsed_results = []
+
+    def process_result_data(self, exam_title="Cloud Exam Result"):
+        try:
+            if not self.parsed_results:
+                raise ValueError("No results data to process")
+
+            processed = []
+            for result in self.parsed_results:
+                processed.append({
+                    "Enrollment No": result.get("enrollment_no", ""),
+                    "Marks Obtained": result.get("marks_obtained", 0),
+                    "Total Marks": result.get("total_marks", 0),
+                    "Negative Marks": result.get("wrong_marks", 0),
+                    "Not Attempted": result.get("not_attempted", 0)
+                })
+
+            df = pd.DataFrame(processed)
+            self.save_results_file(df, exam_title)
+
+        except Exception as e:
+            messagebox.showerror(
+                "Processing Error", 
+                f"Failed to process results:\n{type(e).__name__}: {str(e)}"
+            )
+
+    def save_results_file(self, df, title):
+        try:
+            file_path = filedialog.asksaveasfilename(
+                defaultextension=".xlsx",
+                filetypes=[("Excel Files", "*.xlsx")],
+                title="Save Exam Results As"
+            )
+
+            if not file_path:
+                return
+
+            writer = pd.ExcelWriter(file_path, engine='xlsxwriter')
+            df.to_excel(writer, index=False, sheet_name='Results', startrow=1)
+
+            workbook = writer.book
+            worksheet = writer.sheets['Results']
+
+            title_format = workbook.add_format({
+                'bold': True,
+                'font_size': 14,
+                'align': 'center',
+                'valign': 'vcenter',
+                'fg_color': '#D9E1F2'
+            })
+            worksheet.merge_range(0, 0, 0, len(df.columns) - 1, title, title_format)
+
+            header_format = workbook.add_format({
+                'bold': True,
+                'text_wrap': True,
+                'valign': 'top',
+                'fg_color': '#4F81BD',
+                'font_color': 'white',
+                'border': 1
+            })
+
+            normal_format = workbook.add_format({
+                'border': 1,
+                'valign': 'top',
+            })
+            alt_format = workbook.add_format({
+                'bg_color': '#F2F2F2',
+                'border': 1,
+                'valign': 'top',
+            })
+
+            for col_num, column_name in enumerate(df.columns.values):
+                worksheet.write(1, col_num, column_name, header_format)
+
+            for row_num, row_data in enumerate(df.values, start=2):
+                for col_num, cell_data in enumerate(row_data):
+                    fmt = alt_format if (row_num - 2) % 2 == 0 else normal_format
+                    worksheet.write(row_num, col_num, cell_data, fmt)
+
+            for i, column in enumerate(df.columns):
+                max_len = max(df[column].astype(str).map(len).max(), len(column))
+                worksheet.set_column(i, i, max_len + 2)
+
+            worksheet.freeze_panes(2, 0)
+
+            writer.close()
+            messagebox.showinfo("Success", f"Results exported successfully!\n{len(df)} records saved")
+
+        except Exception as e:
+            messagebox.showerror("Save Error", f"Failed to save results: {str(e)}")
 
 
     def decrypt_file(self, file_path):

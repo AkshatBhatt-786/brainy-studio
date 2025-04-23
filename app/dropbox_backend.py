@@ -7,10 +7,14 @@ from icecream import ic
 
 class DropboxBackend:
 
-    def __init__(self, access_token: str, app_key: str, app_secret: str, root_path: str):
-        self.dbx = dropbox.Dropbox(access_token, app_key=app_key, app_secret=app_secret)
+    def __init__(self, refresh_token: str, app_key: str, app_secret: str, root_path: str):
+        self.dbx = dropbox.Dropbox(
+            oauth2_refresh_token=refresh_token,
+            app_key=app_key,
+            app_secret=app_secret
+        )
         self.root_path = root_path
-
+        
     @staticmethod
     def handle_error(e):
         if isinstance(e, AuthError):

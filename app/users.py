@@ -9,6 +9,7 @@ from ui_components import *
 from utils import centerWindow, getPath
 from PIL import Image
 import customtkinter as ctk
+from splash_screen import SplashScreen
 
 # ^ Author : Bhatt Akshat S
 # ^ Last Updated : 17-01-2025
@@ -329,5 +330,4 @@ class AuthView(ctk.CTkToplevel):
         self.message_box = None
     
     def run(self):
-        self.build()
-        self.mainloop()
+        SplashScreen(root=self, logo_path=getPath("assets\\images\\logo.png"))

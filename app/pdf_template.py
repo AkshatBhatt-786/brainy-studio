@@ -4,17 +4,20 @@ from reportlab.lib import colors
 from reportlab.lib.utils import ImageReader
 from utils import getPath
 from textwrap import wrap
+from reportlab.pdfbase import pdfmetrics
+from reportlab.pdfbase.ttfonts import TTFont
 from ui_components import *
+
 
 class GeneratePDF:
     def __init__(self, title, subject_details, instructions, questions, enrollment_no, logo_path, include_header=True, include_footer=True, show_answers=False):
-        # try:
-            # pdfmetrics.registerFont(TTFont('DejaVuSans', getPath('assets\\fonts\\DejaVuSansCondensed.ttf')))
-            # pdfmetrics.registerFont(TTFont('DejaVuSans-BoldOblique', getPath('assets\\fonts\\DejaVuSans-BoldOblique.ttf')))
-            # pdfmetrics.registerFont(TTFont('DejaVuSansCondensed-Bold', getPath('assets\\fonts\\DejaVuSansCondensed-Bold.ttf')))
+        try:
+            pdfmetrics.registerFont(TTFont('DejaVuSans', getPath(r'assets\\fonts\\DejaVuSansCondensed.ttf')))
+            pdfmetrics.registerFont(TTFont('DejaVuSans-BoldOblique', getPath(r'assets\\fonts\\DejaVuSans-BoldOblique.ttf')))
+            pdfmetrics.registerFont(TTFont('DejaVuSansCondensed-Bold', getPath(r'assets\\fonts\\DejaVuSansCondensed-Bold.ttf')))
 
-        # except Exception as e:
-        #     print(e)
+        except Exception as e:
+            print(e)
 
         self.title = title
         self.subject_details = subject_details

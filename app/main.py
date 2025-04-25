@@ -172,11 +172,6 @@ class BrainyStudioApp(ctk.CTk):
         self._create_action_card("Open Codex Formatter", "assets\\images\\brainstorm.png", 1, 1, lambda: self.open_codex_formatter())
         self._create_action_card("Export to Excel", "assets\\images\\excel.png", 1, 2, lambda: self.redirect("excel-export-page"))
 
-        # self.recent_projects_frame = ctk.CTkScrollableFrame(self.main_content, fg_color=Colors.SECONDARY, corner_radius=10)
-        # self.recent_projects_frame.pack(padx=20, pady=10, expand=True, fill="both")
-        # self.recent_projects_frame.grid_propagate(flag=False)
-        # self.load_recent_projects()
-
         self.footer_label = ctk.CTkLabel(
             master=self.main_content,
             text="Brainy Studio v1.0.2 (beta)",

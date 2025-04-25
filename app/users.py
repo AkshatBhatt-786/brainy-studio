@@ -266,7 +266,7 @@ class AuthView(ctk.CTkToplevel):
                 self.message_desc.configure(text="Please select a valid workspace directory.")
                 self.after(4000, self.onMessageboxClose)
                 return
-    
+            
         self.user_manager.register_user(username , password1, workspace_path)
         self.user_manager.login_user(username, password1)
         self.on_login_success()

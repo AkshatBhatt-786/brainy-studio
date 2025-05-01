@@ -2,6 +2,7 @@ import customtkinter as ctk
 from tkinter import filedialog, messagebox
 from tkcalendar import DateEntry
 import json
+import sqlite3
 import datetime
 from ui_components import Colors, PrimaryButton, LinkButton
 from create_paper import PasswordDialog
@@ -763,12 +764,40 @@ class CloudPublishUI(ctk.CTkFrame):
                     created = result_link.create_exam(exam_id=exam_id, access_code=access_code, subject_details=exam_paper["subject_details"])
                     if created:
                         messagebox.showinfo("Paper Generated Successfully!", f"EXAM-ID: {exam_id}, \nACCESS-CODE: {access_code}")
+                        self.save_exam_record(
+                            exam_id=exam_id,
+                            access_code=access_code,
+                            subject_code=self.subject_combo.get(),
+                            exam_title=exam_title,
+                            reg_start=self.registration_times[0],
+                            reg_end=self.registration_times[1],
+                            reg_date=self.subject_date_picker.get_date().strftime("%d-%m-%Y")
+                        )
+                        return
                 except Exception as e:
                         messagebox.showerror("Something Went Wrong!, Try Again Later!")
         except Exception as e:
             messagebox.showerror("Something Went Wrong!", f"{e}")
         
         return
+    
+    def save_exam_record(self, exam_id, access_code, subject_code, exam_title, reg_start, reg_end, reg_date):
+        db_path = getPath("database\\brainy-studio.db")
+        conn = sqlite3.connect(db_path)
+        
+        try:
+            conn.execute('''
+                INSERT INTO exams (exam_id, access_code, subject_code, exam_title, 
+                                 registration_start, registration_end, registration_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ''', (exam_id, access_code, subject_code, exam_title, reg_start, reg_end, reg_date))
+            
+            conn.commit()
+            messagebox.showinfo("Success", "Exam record saved successfully!")
+        except sqlite3.Error as e:
+            messagebox.showerror("Database Error", f"Failed to save exam record: {str(e)}")
+        finally:
+            conn.close()
 
     def _derive_key(self, password, salt):
         # ! Credits ! Tech with tim & Neuraline YT

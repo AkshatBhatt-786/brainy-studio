@@ -8,18 +8,6 @@ import sys
 class SubjectDBManager:
     def __init__(self):
         self.db_path = getPath(r"database\brainy-studio.db")
-        self.initialize_db()
-
-    def initialize_db(self):
-        conn = sqlite3.connect(self.db_path)
-        cursor = conn.cursor()
-        cursor.execute('''CREATE TABLE IF NOT EXISTS subjects (
-                            subject_code TEXT PRIMARY KEY,
-                            subject_name TEXT,
-                            instructions TEXT
-                        )''')
-        conn.commit()
-        conn.close()
 
     def get_subject_name(self, subject_code):
         conn = sqlite3.connect(self.db_path)

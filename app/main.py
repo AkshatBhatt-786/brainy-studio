@@ -32,6 +32,7 @@ from generate_pdf import GeneratePDFUI
 from cloud_export import CloudPublishUI
 from subject_db import SubjectDBManager
 from excel_export import ExportToExcelUI
+from admin_panel import AdminPanel
 from codex_formatter import CodexFormatter
 
 subject_db = SubjectDBManager()
@@ -285,10 +286,14 @@ class BrainyStudioApp(ctk.CTk):
 
         self.configure_database_name_btn = SidebarButton(
             master=self.name_frame,
-            text="Configure Database",
-            command=None
+            text="Open Admin Panel",
+            command=lambda: self.open_admin_panel()
         )
         self.configure_database_name_btn.grid(row=8, column=0, pady=10, sticky="w")
+
+    def open_admin_panel(self):
+        self.attributes("-topmost", False)
+        self.admin_panel = AdminPanel(subject_db=subject_db)
 
     def _create_icon_frame(self):
         self.icon_frame = ctk.CTkScrollableFrame(

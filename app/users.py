@@ -26,15 +26,35 @@ class UserManager:
         self.create_users_tables()
     
     def create_users_tables(self):
-        self.cursor.execute("""
+        self.cursor.execute('''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT UNIQUE NOT NULL CHECK(LENGTH(username) >= 6),
+                username TEXT UNIQUE NOT NULL,
                 password TEXT NOT NULL,
-                workspace TEXT UNIQUE NOT NULL,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                workspace_path TEXT UNIQUE NOT NULL,
+                role TEXT DEFAULT 'examiner'
             )
+        ''')
+        self.cursor.execute("""
+            CREATE TABLE IF NOT EXISTS exams (
+                exam_id TEXT PRIMARY KEY,
+                access_code TEXT NOT NULL,
+                subject_code TEXT NOT NULL,
+                exam_title TEXT NOT NULL,
+                registration_start TEXT NOT NULL,
+                registration_end TEXT NOT NULL,
+                publish_time DATETIME DEFAULT CURRENT_TIMESTAMP,
+                registration_date DATETIME NOT NULL,
+                FOREIGN KEY(subject_code) REFERENCES subjects(code)
+            );
         """)
+        self.cursor.execute('''
+            CREATE TABLE IF NOT EXISTS subjects (
+                subject_code TEXT PRIMARY KEY,
+                subject_name TEXT,
+                instructions TEXT
+            )
+        ''')
         self.conn.commit()
     
     def hash_password(self, password):
@@ -63,7 +83,7 @@ class UserManager:
             except OSError:
                 messagebox.show_error("OS Error", "failed to create directory!")
             self.cursor.execute("""
-                INSERT INTO users (username, password, workspace)
+                INSERT INTO users (username, password, workspace_path)
                 VALUES (?, ?, ?)
             """, (username, password_hash, workspace))
             self.conn.commit()

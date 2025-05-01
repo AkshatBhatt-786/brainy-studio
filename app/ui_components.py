@@ -103,8 +103,7 @@ class IconButton(ctk.CTkButton):
             cursor="hand2", fg_color="transparent",
             text_color=Colors.Texts.BORDER,
             hover_color=Colors.SECONDARY,
-            corner_radius=18,
-            text="", **kwargs)
+            corner_radius=18, text="", **kwargs)
         
 class SidebarButton(ctk.CTkButton):
     def __init__(self, master, **kwargs):
